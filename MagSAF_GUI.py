@@ -55,7 +55,7 @@ class GUI(ctk.CTk):
         super().__init__()
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
-        self.title("SAF Magnetic Hysteresis Simulator and Fitting Tool")
+        self.title("MagSAF - Simulating and Fitting of Magnetic Hystersis Loops of SAFs")
 
         # all frames
         self.scroll_parent = ctk.CTkScrollableFrame(self, height=1115, width=1920, fg_color="#0B2538", scrollbar_fg_color="#2B2B2B", corner_radius=0)
@@ -103,11 +103,11 @@ class GUI(ctk.CTk):
         self.FM2_Hani_ip = Parameter(self, self.param_frame, 3, "Hani", 0, 0, 10)
         self.FM2_PhiAni_ip = Parameter(self, self.param_frame, 4, "\u03C6ani", 90, 0, 180)
 
-        ctk.CTkLabel(self.param_frame, text="Non-magnetic Spacer Layer", font=(font_name, large_font_size)).grid(row=5, column=1, columnspan=6, padx=pads, pady=pads, sticky="n")
-        self.J1 = Parameter(self, self.param_frame, 6, "J\u2081", -0.5, 0, -1, fit=True)
+        ctk.CTkLabel(self.param_frame, text="Non-magnetic Spacer Layer", font=(font_name, large_font_size)).grid(row=5, column=2, columnspan=6, padx=pads, pady=pads, sticky="n")
+        self.J1 = Parameter(self, self.param_frame, 6, "J\u2081", -0.75, 0, -1.5, fit=True)
         self.J2 = Parameter(self, self.param_frame, 7, "J\u2082", -0.25, 0, -0.5, fit=True)
         
-        ctk.CTkLabel(self.param_frame, text="Bottom Ferromagnetic Layer", font=(font_name, large_font_size)).grid(row=8, column=1, columnspan=6, padx=pads, pady=pads, sticky="n")
+        ctk.CTkLabel(self.param_frame, text="Bottom Ferromagnetic Layer", font=(font_name, large_font_size)).grid(row=8, column=2, columnspan=6, padx=pads, pady=pads, sticky="n")
         self.FM1_dMs = Parameter(self, self.param_frame, 9, "d*M\u209B", 6.25, 1, 40)
         self.FM1_dMs_calc = ThicknessMsCalculator(self.param_frame, 10, self.FM1_dMs)
         self.FM1_Hani_ip = Parameter(self, self.param_frame, 11, "Hani", 0, 0, 10)
@@ -128,7 +128,7 @@ class GUI(ctk.CTk):
 
         self.sim_phiH = ctk.CTkEntry(self.sim_fit_opt_frame, font=(font_name, medium_font_size), width=entry_w, validate="key")
         self.sim_phiH.grid(row=1, column=1, padx=pads/2, pady=pads, sticky="w")
-        self.sim_phiH.insert(0, 90)
+        self.sim_phiH.insert(0, 0)
         ctk.CTkLabel(self.sim_fit_opt_frame, text="°", font=(font_name, medium_font_size)).grid(row=1, column=2, padx=(0, 3*pads), pady=pads, sticky="w")
 
         # field steps in mT
