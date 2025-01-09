@@ -5,12 +5,25 @@ MagSAF is a GUI for fast and easy simulations of magnetic hysteresis loops of sy
 In the future, more theoretical models, out-of-plane SAFs as well as more anisotropy options are planned.
 
 ## Getting started
-tbd: add list of contents
+1. [How to install](#how-to-install)
+2. [How to use](#how-to-use)
+   - [Quick introduction](#quick-introduction)
+   - [Detailed explanation](#detailed-explanation)
+3. [Theoretical Framework](#theoretical-framework)
+   - [What is a synthetic antiferromagnet (SAF)?](#what-is-a-synthetic-antiferromagnet-saf)
+   - [Macrospin Model](#macrospin-model)
+4. [Fitting procedure](#fitting-procedure)
+   - [Figure of Merit](#figure-of-merit)
 
 ## How to install
 tbd
 
-## How to use
+## How to use 
+
+### Quick introduction
+tbd
+
+### Detailed explanation
 tbd
 
 ## Theoretical Framework
@@ -24,3 +37,10 @@ A synthetic antiferromagnet (SAF) is a magnetic, thin film heterostructure. It c
 ### Macrospin Model
 
 Currently, only a macrospin model is implemented in MagSAF. This model simplifies all magnetic moments in both of the ferromagnetic layers to one "macrospin" - just like in the Stoner-Wohlfarth model.
+
+## Fitting procedure
+
+TODO: what happens when you fit (global - polish fit)
+
+### Figure of Merit
+tbd
