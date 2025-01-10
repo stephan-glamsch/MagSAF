@@ -279,6 +279,9 @@ class GUI(ctk.CTk):
         self.cover_frame = ctk.CTkFrame(self.plot_options_frame, height=0)
         self.cover_frame.grid(row=1, column=0, columnspan=7, padx=pads, pady=(pads, 0), sticky="nsew")
 
+        self.loaded_file_label = ctk.CTkLabel(self.plot_options_frame, text="Loaded data file:",font=(font_name, medium_font_size))
+        self.loaded_file_label.grid(row=2, column=0, padx=(2*pads, pads), pady=(pads, 0), sticky="w")
+
 
         # PLOT FRAME
         self.fig = plt.figure(figsize=(GUI_scale*8, GUI_scale*7.5))
@@ -423,10 +426,12 @@ class GUI(ctk.CTk):
         self.fig_ax.set_xlabel("µ{0}H (T)".format(chr(0x2080)), fontsize=12)
         if len(self.exp_H) > 0:
             x_max = max(self.exp_H) * 1.1
+            xlim = (-x_max, x_max) if rescale == True else cur_xlim
+            self.fig_ax.set_xlim(xlim)
         elif len(self.sim_H) > 0:
             x_max = max(self.sim_H) * 1.1
-        xlim = (-x_max, x_max) if rescale == True else cur_xlim
-        self.fig_ax.set_xlim(xlim)
+            xlim = (-x_max, x_max) if rescale == True else cur_xlim
+            self.fig_ax.set_xlim(xlim)
 
         # exp. data
         try:
@@ -623,6 +628,9 @@ class GUI(ctk.CTk):
                 self.exp_H_steps.append(dH)
 
             self.drawPlot("Hysteresis")
+            filename = exp_data_filename.split("/")
+            filename = filename[-1]
+            self.loaded_file_label.configure(text="Loaded data file: " + filename)
         except Exception as err:
             self.writeConsole("Error: Exp. data could not be loaded. Make sure you chose the correct file and it is structured correctly (see documentation).")      
 
@@ -630,6 +638,7 @@ class GUI(ctk.CTk):
     def removeData(self):
         self.exp_H = []
         self.exp_M = []
+        self.loaded_file_label.configure(text="Loaded data file: ")
         try:
             self.exp_plot.pop(0).remove()
             self.fig_ax.legend().remove()
@@ -906,7 +915,7 @@ class GUI(ctk.CTk):
         param_values = []
         for i in range(0, 9):
             if i in (0, 1, 3, 4, 5, 6):
-                val = self.param_values[i] * 1e3
+                val = round(self.param_values[i] * 1e3, 13)
             elif i in (2, 7, 8):
                 val = round(self.param_values[i] * 180/np.pi, 3)
             else:
