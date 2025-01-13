@@ -58,7 +58,7 @@ class GUI(ctk.CTk):
         self.title("MagSAF - Simulating and Fitting of Magnetic Hystersis Loops of SAFs")
 
         # all frames
-        self.scroll_parent = ctk.CTkScrollableFrame(self, height=1115, width=1920, fg_color="#0B2538", scrollbar_fg_color="#2B2B2B", corner_radius=0)
+        self.scroll_parent = ctk.CTkScrollableFrame(self, height=1150, width=1920, fg_color="#0B2538", scrollbar_fg_color="#2B2B2B", corner_radius=0)
         self.scroll_parent.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.scroll_parent.grid_columnconfigure(2, weight=1)
         self.scroll_parent.grid_rowconfigure(2, weight=1)
@@ -279,8 +279,8 @@ class GUI(ctk.CTk):
         self.cover_frame = ctk.CTkFrame(self.plot_options_frame, height=0)
         self.cover_frame.grid(row=1, column=0, columnspan=7, padx=pads, pady=(pads, 0), sticky="nsew")
 
-        self.loaded_file_label = ctk.CTkLabel(self.plot_options_frame, text="Loaded data file:",font=(font_name, medium_font_size))
-        self.loaded_file_label.grid(row=2, column=0, padx=(2*pads, pads), pady=(pads, 0), sticky="w")
+        self.loaded_file_label = ctk.CTkLabel(self.plot_options_frame, text="Loaded data file:", font=(font_name, medium_font_size))
+        self.loaded_file_label.grid(row=2, column=0, columnspan=7, padx=(2*pads, pads), pady=(pads, 0), sticky="w")
 
 
         # PLOT FRAME
