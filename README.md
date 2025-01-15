@@ -4,11 +4,12 @@ MagSAF is a GUI for fast and easy simulations of magnetic hysteresis loops of sy
 
 In the future, more theoretical models, out-of-plane SAFs as well as more anisotropy options are planned.
 
+![Screenshot of the GUI](readme_files/gui_screenshot.png)
+
 ## Getting started
 1. [How to install](#how-to-install)
 2. [How to use](#how-to-use)
-   - [Quick introduction](#quick-introduction)
-   - [Detailed explanation](#detailed-explanation)
+   - [Loading experimental data](#loading-experimental-data)
 3. [Theoretical Framework](#theoretical-framework)
    - [What is a synthetic antiferromagnet (SAF)?](#what-is-a-synthetic-antiferromagnet-saf)
    - [Macrospin Model](#macrospin-model)
@@ -20,11 +21,12 @@ tbd
 
 ## How to use 
 
-### Quick introduction
-tbd
+### Loading experimental data
 
-### Detailed explanation
-tbd
+The data file has to be a .txt file with two columns separated by either '\t' or whitespaces. The first column has to be the magnetic field and the second one the magnetization. For the magnetic field, supported units are 'Oe', 'mT' and 'T' and for the magnetization they are 'A/m' and 'kA/m'. Furthermore, the file is assumed to have two header lines which are being skipped on loading.
+
+> [!IMPORTANT]
+> Before loading a data file, the total, magnetic film thickness has to be specified in Step 1 of the **Simulation / Fit Procedure** section.
 
 ## Theoretical Framework
 
@@ -40,22 +42,22 @@ Currently, only a macrospin model is implemented in MagSAF. This model simplifie
 
 ## Fitting procedure
 
-TODO: what happens when you fit (global - polish fit)
+First, a global minimizer is used to find good starting parameters for a subsequent local minimizer. For the global minimizer, [scipy.optimize.differential_evolution](https://docs.scipy.org/doc/scipy-1.15.0/reference/generated/scipy.optimize.differential_evolution.html) method is being used. Its *maxiter* and *popsize* parameter can be adjusted by the **fast fit**/**precise fit** option next to the fit button with **precise fit** increasing the *maxiter* and *popsize* parameter. For the subsequent local minimizer, [scipy.optimize.minimize](https://docs.scipy.org/doc/scipy-1.15.0/reference/generated/scipy.optimize.minimize.html) is being used with the *L-BFGS-B* method. Both minimizers try to minimize the Figure of Merit (FOM).
 
 ### Figure of Merit
 
 The Figure of Merit is calculated by the following equation:
 
-$$\Large FOM = \frac{1}{N} \sum_i \frac{\Delta H_i}{\Delta H_{max}} \cdot |1 - \frac{dM^{sim}_i}{dM^{exp}_i}|$$
+$$\large FOM = \frac{1}{N} \sum_i \frac{\Delta H_i}{\Delta H_{max}} \cdot |1 - \frac{dM^{sim}_i}{dM^{exp}_i}|$$
 
-$N$ is the amount of data points of the full hysteresis loop, $\sum_i$ sums over all data points, $\Delta H_{i}$ is the field distance to the data points neighbors and $\Delta H_{max}$ is the largest field distance between neighboring data points in the full hysteresis loop. This eliminates over-weighting of specific field ranges, if the field step size changes during the hysteresis loop (e.g. smaller steps around zero field). $dM^{sim}_i$ and $dM^{exp}_i$ are the simulated and experimental $d \cdot M$ values of the respective data point, where $d \cdot M$ is the total, magnetic film thickness multiplied with the magnetization.
+$N$ is the amount of data points of the full hysteresis loop, $\sum_i$ sums over all data points, $\Delta H_{i}$ is equal to $|H_{i-1} - H_i| + |H_i - H_{i+1}|$ and $\Delta H_{max}$ is the largest distance between neighboring data points in the full hysteresis loop. This first part eliminates over-weighting of specific field ranges, if the field step size changes during the hysteresis loop (e.g. smaller steps around zero field). $dM^{sim}_i$ and $dM^{exp}_i$ are the simulated and experimental $d \cdot M$ values of the respective data point, where $d \cdot M$ is the total, magnetic film thickness multiplied with the total magnetization.
 
-It is additionally possible to deliberatly increase the weight of the FOM in specific field ranges. To do so, the user can set the transition fields between the antiferromagnetic (AFM) and canted (C) as well as between the canted (C) and ferromagnetic (FM) spin alignment (or any other field values) under **Fit Options**. Then, a *Fit Focus Region* can be picked (either AFM, C, FM or none). By doing so, the FOM of the picked region is multiplied by 3 to increase its weight. The regions are defined as:
-
-```math
-\begin{align*}
-AFM:& 0 &< |h| &< H_{AFM-C} \\
-C:& H_{AFM-C} &< |h| &< H_{C-FM} \\
-FM:& H_{C-FM} &< |h|
-\end{align*}
-```
+> [!TIP]
+> It is possible to deliberatly increase the weight of the FOM in specific field ranges. To do so, the user can set the transition fields between the antiferromagnetic (AFM) and canted (C) as well as between the canted (C) and ferromagnetic (FM) spin alignment (or any other field values) under **Fit Options**. Then, a *Fit Focus Region* can be picked (either AFM, C, FM or none). By doing so, the FOM of the picked region is multiplied by 3 to increase its weight. The regions are defined as:
+> ```math
+> \begin{align*}
+> \text{AFM}:& 0 &< |H\;| &< H_{AFM-C} \\
+> \text{C}:& H_{AFM-C} &< |H\;| &< H_{C-FM} \\
+> \text{FM}:& H_{C-FM} &< |H\;|
+> \end{align*}
+> ```
