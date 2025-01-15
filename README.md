@@ -43,4 +43,19 @@ Currently, only a macrospin model is implemented in MagSAF. This model simplifie
 TODO: what happens when you fit (global - polish fit)
 
 ### Figure of Merit
-tbd
+
+The Figure of Merit is calculated by the following equation:
+
+$$\Large FOM = \frac{1}{N} \sum_i \frac{\Delta H_i}{\Delta H_{max}} \cdot |1 - \frac{dM^{sim}_i}{dM^{exp}_i}|$$
+
+$N$ is the amount of data points of the full hysteresis loop, $\sum_i$ sums over all data points, $\Delta H_{i}$ is the field distance to the data points neighbors and $\Delta H_{max}$ is the largest field distance between neighboring data points in the full hysteresis loop. This eliminates over-weighting of specific field ranges, if the field step size changes during the hysteresis loop (e.g. smaller steps around zero field). $dM^{sim}_i$ and $dM^{exp}_i$ are the simulated and experimental $d \cdot M$ values of the respective data point, where $d \cdot M$ is the total, magnetic film thickness multiplied with the magnetization.
+
+It is additionally possible to deliberatly increase the weight of the FOM in specific field ranges. To do so, the user can set the transition fields between the antiferromagnetic (AFM) and canted (C) as well as between the canted (C) and ferromagnetic (FM) spin alignment (or any other field values) under **Fit Options**. Then, a *Fit Focus Region* can be picked (either AFM, C, FM or none). By doing so, the FOM of the picked region is multiplied by 3 to increase its weight. The regions are defined as:
+
+```math
+\begin{align*}
+AFM:& 0 &< |h| &< H_{AFM-C} \\
+C:& H_{AFM-C} &< |h| &< H_{C-FM} \\
+FM:& H_{C-FM} &< |h|
+\end{align*}
+```
