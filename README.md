@@ -12,6 +12,7 @@ In the future, more theoretical models, out-of-plane SAFs as well as more anisot
    - [Loading experimental data](#loading-experimental-data)
 3. [Theoretical Framework](#theoretical-framework)
    - [What is a synthetic antiferromagnet (SAF)?](#what-is-a-synthetic-antiferromagnet-saf)
+   - [Coordinate System](#coordinate-system)
    - [Macrospin Model](#macrospin-model)
 4. [Fitting procedure](#fitting-procedure)
    - [Figure of Merit](#figure-of-merit)
@@ -26,7 +27,7 @@ tbd
 The data file has to be a .txt file with two columns separated by either '\t' or whitespaces. The first column has to be the magnetic field and the second one the magnetization. For the magnetic field, supported units are 'Oe', 'mT' and 'T' and for the magnetization they are 'A/m' and 'kA/m'. Furthermore, the file is assumed to have two header lines which are being skipped on loading.
 
 > [!IMPORTANT]
-> Before loading a data file, the total, magnetic film thickness has to be specified in Step 1 of the **Simulation / Fit Procedure** section.
+> It is assumed that you want to fit a magnetic hysteresis loop $M(H)$ which is already normalized to the magnetic volume of your sample. Becasue of this, you have to specify the total, magnetic film thickness (the one you assumed to normalize your $M(H)$ data) in Step 1 of the **Simulation / Fit Procedure** section before you can load your data file.
 
 ## Theoretical Framework
 
@@ -36,9 +37,34 @@ TODO: add some sources
 
 A synthetic antiferromagnet (SAF) is a magnetic, thin film heterostructure. It consists of 2 ferromagnetic layers (e.g. Co, Fe, etc.) which are separated by a very thin, conductive, non-magnetic layer (e.g. Ru). In such a layer stack, an indirect, interlayer coupling arises which is usually described by the Ruderman-Kittel-Kasuya-Yosida (RKKY) model. The coupling can prefer any type of alignment between the 2 ferromagnetic layers (parallel, anti-parallel or non-collinear) depending on the material parameters - especially the thickness of the non-magnetic layer. The main focus, however, lies on the anti-parallel and non-collinear coupling.
 
+### Coordinate System
+
+Currently, only in-plane SAFs and their simulation/fitting is supported. It is assumed that the external magnetic field, both uniaxial magnetic anisotropies and all magnetic moments always lie within a two dimensional plane (in-plane of the thin film).
+
 ### Macrospin Model
 
-Currently, only a macrospin model is implemented in MagSAF. This model simplifies all magnetic moments in both of the ferromagnetic layers to one "macrospin" - just like in the Stoner-Wohlfarth model.
+Currently, only a macrospin model is implemented. This model simplifies all magnetic moments in one of the ferromagnetic layers to one "macrospin" - similar to the Stoner-Wohlfarth model. Thus, we have two layers ($i$ = $A$, $B$) with their individual macrospin angles $\phi^i$, saturation magnetizations $M^i$, thicknesses $d^i$ and uniaxial anisotropy fields $H_{ani}^i$ and angles $\phi_{ani}^i$.
+
+The magnetic, free energy of this bilayer system is given by the Zeeman energies, the uniaxial, magnetic anisotropies and the bilinear $J_1$ and biquadratic $J_2$ RKKY coupling:
+```math
+\begin{align*}
+G \:\: = &-d^A \: M^A \: [ \: H \: \text{cos}(\phi^A - \phi^H) \: + \: 0.5 \: H_{ani}^A \: \text{cos}(\phi^A - \phi_{ani}^A)^2] \
+&-d^B \: M^B \: [ \: H \: \text{cos}(\phi^B - \phi^H) \: + \: 0.5 \: H_{ani}^B \: \text{cos}(\phi^B - \phi_{ani}^B)^2] \
+&-J_1 \: \text{cos}(\phi^A - \phi^B) \: - \: J_2 \: \text{cos}(\phi^A - \phi^B)^2
+\end{align*}
+```
+
+The equilibrium states of $\phi^A$ and $\phi^B$ for different external, magnetic fields $H$ are found by finding the local minimum of $G(\phi^A, \phi^B)$. For that, the $\phi^A$ and $\phi^B$ values of the last hysteresis data point are used as starting guess. For the first data point of a hysteresis loop, saturation is assumed ($\phi^A = \phi^B = \phi^H$).
+
+With $\phi^A$ and $\phi^B$ known for each $H$ field step, the magnetization of the bilayer $M$ can be calculated for all $H$ field steps by
+```math
+M \: = \: [d^A \: M_s^A \: \text{cos}(\phi^A - \phi^H) \: + \: d^B \: M_s^B \: \text{cos}(\phi^B - \phi^H]/d_{tot}
+```
+
+> [!NOTE]
+> This model can't distinguish between the thickness $d^i$ and saturation magnetization $M_s^i$ of one layer, since both parameters always come in pairs. This is why, their product $d^i M_s^i$ is used for simulations/fits. Because those values are not very intuitive, a $d^i M_s^i$ calculator is implemented in the GUI.
+>
+> This is also why we plot $d M$ vs $H$ and why you have to add the total, magnetic thickness $d_{tot}$ before loading experimental $M(H)$ data.
 
 ## Fitting procedure
 
