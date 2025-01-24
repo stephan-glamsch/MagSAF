@@ -18,7 +18,12 @@ In the future, more theoretical models, out-of-plane SAFs as well as more anisot
    - [Figure of Merit](#figure-of-merit)
 
 ## How to install
-tbd
+
+MagSAF was developed and tested on Windows 11 with python 3.11.8. All required python packages are listed in [requirements.txt](requirements.txt). You can either download the source code, install all required packages with
+```
+python -m pip install -r requirements.txt
+```
+and then executing `MagSAF_GUI.py` or you can go to XYZ and download a auto-py-to-exe generated .exe file of MagSAF.
 
 ## How to use 
 
