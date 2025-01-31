@@ -16,7 +16,7 @@ from MacrospinModel import MacrospinModel
 plt.style.use('dark_background')
 ctk.set_appearance_mode("Dark")
 screen_size = pyautogui.size()
-GUI_scale = screen_size.width/2560
+GUI_scale = screen_size.width/2665
 ctk.set_widget_scaling(GUI_scale)
 ctk.set_window_scaling(GUI_scale)
 
@@ -103,11 +103,11 @@ class GUI(ctk.CTk):
         self.FM2_Hani_ip = Parameter(self, self.param_frame, 3, "Hani", 0, 0, 10)
         self.FM2_PhiAni_ip = Parameter(self, self.param_frame, 4, "\u03C6ani", 90, 0, 180)
 
-        ctk.CTkLabel(self.param_frame, text="Non-magnetic Spacer Layer", font=(font_name, large_font_size)).grid(row=5, column=2, columnspan=6, padx=pads, pady=pads, sticky="n")
+        ctk.CTkLabel(self.param_frame, text="Non-magnetic Spacer Layer", font=(font_name, large_font_size)).grid(row=5, column=2, columnspan=6, padx=pads, pady=(3*pads,pads), sticky="n")
         self.J1 = Parameter(self, self.param_frame, 6, "J\u2081", -0.75, 0, -1.5, fit=True)
         self.J2 = Parameter(self, self.param_frame, 7, "J\u2082", -0.25, 0, -0.5, fit=True)
         
-        ctk.CTkLabel(self.param_frame, text="Bottom Ferromagnetic Layer", font=(font_name, large_font_size)).grid(row=8, column=2, columnspan=6, padx=pads, pady=pads, sticky="n")
+        ctk.CTkLabel(self.param_frame, text="Bottom Ferromagnetic Layer", font=(font_name, large_font_size)).grid(row=8, column=2, columnspan=6, padx=pads, pady=(3*pads, pads), sticky="n")
         self.FM1_dMs = Parameter(self, self.param_frame, 9, "d*M\u209B", 6.25, 1, 40)
         self.FM1_dMs_calc = ThicknessMsCalculator(self.param_frame, 10, self.FM1_dMs)
         self.FM1_Hani_ip = Parameter(self, self.param_frame, 11, "Hani", 0, 0, 10)
@@ -286,9 +286,10 @@ class GUI(ctk.CTk):
         # PLOT FRAME
         self.fig = plt.figure(figsize=(GUI_scale*8, GUI_scale*7.5))
         self.fig_ax = self.fig.add_subplot(111)
-        self.fig_ax.set_ylabel("d*M (mA)", fontsize=12)
-        self.fig_ax.set_xlabel("µ{0}H (T)".format(chr(0x2080)), fontsize=12)
-        self.fig_ax.set_title("Magnetic Hysteresis", fontsize=13)
+        self.fig_ax.set_ylabel("d*M (mA)", fontsize=15*GUI_scale)
+        self.fig_ax.set_xlabel("µ{0}H (T)".format(chr(0x2080)), fontsize=15*GUI_scale)
+        self.fig_ax.tick_params("both", labelsize=12*GUI_scale)
+        self.fig_ax.set_title("Magnetic Hysteresis", fontsize=16*GUI_scale)
         self.fig.set_facecolor("#2B2B2B")
         self.fig_ax.set_facecolor("#2B2B2B")
         self.canvas = FigureCanvasTkAgg(self.fig, self.plot_frame)
@@ -421,9 +422,9 @@ class GUI(ctk.CTk):
             self.g_colorbar.ax.remove()
         except:
             pass
-        self.fig_ax.set_title("Magnetic Hysteresis", fontsize=13)
-        self.fig_ax.set_ylabel("d*M (mA)", fontsize=12)
-        self.fig_ax.set_xlabel("µ{0}H (T)".format(chr(0x2080)), fontsize=12)
+        self.fig_ax.set_title("Magnetic Hysteresis", fontsize=16*GUI_scale)
+        self.fig_ax.set_ylabel("d*M (mA)", fontsize=15*GUI_scale)
+        self.fig_ax.set_xlabel("µ{0}H (T)".format(chr(0x2080)), fontsize=15*GUI_scale)
         if len(self.exp_H) > 0:
             x_max = max(self.exp_H) * 1.1
             xlim = (-x_max, x_max) if rescale == True else cur_xlim
@@ -466,10 +467,10 @@ class GUI(ctk.CTk):
         self.axvline = self.fig_ax.axvline(0, color="#D3D3D3", linestyle="--", linewidth=1)
         self.cur_plot = "macrospins"
 
-        self.fig_ax.set_title("Macrospin Angles", fontsize=13)
-        self.fig_ax.set_ylabel("phi (°)", fontsize=12)
+        self.fig_ax.set_title("Macrospin Angles", fontsize=16*GUI_scale)
+        self.fig_ax.set_ylabel("phi (°)", fontsize=15*GUI_scale)
         self.fig_ax.set_ylim(-200, 200)
-        self.fig_ax.set_xlabel("µ{0}H (T)".format(chr(0x2080)), fontsize=12)
+        self.fig_ax.set_xlabel("µ{0}H (T)".format(chr(0x2080)), fontsize=15*GUI_scale)
         if len(self.exp_H) > 0:
             x_max = max(self.exp_H) * 1.1
             self.fig_ax.set_xlim(-x_max, x_max)
@@ -504,10 +505,10 @@ class GUI(ctk.CTk):
             steps = 100
         self.EnergyFieldSlider.configure(number_of_steps=steps-1, from_=steps-1)
 
-        self.fig_ax.set_title("Energy Landscape", fontsize=13)
-        self.fig_ax.set_ylabel("phi top (°)", fontsize=12)
+        self.fig_ax.set_title("Energy Landscape", fontsize=16*GUI_scale)
+        self.fig_ax.set_ylabel("phi top (°)", fontsize=15*GUI_scale)
         self.fig_ax.set_ylim(-180, 180)
-        self.fig_ax.set_xlabel("phi bot (°)", fontsize=12)
+        self.fig_ax.set_xlabel("phi bot (°)", fontsize=15*GUI_scale)
         self.fig_ax.set_xlim(-180, 180)
 
         self.calcEnergyLandscape(self.EnergyFieldSlider.get())
@@ -515,10 +516,10 @@ class GUI(ctk.CTk):
 
     def calcEnergyLandscape(self, index):
         self.fig_ax.clear()
-        self.fig_ax.set_title("Energy Landscape", fontsize=13)
-        self.fig_ax.set_ylabel("phi top (°)", fontsize=12)
+        self.fig_ax.set_title("Energy Landscape", fontsize=16*GUI_scale)
+        self.fig_ax.set_ylabel("phi top (°)", fontsize=15*GUI_scale)
         self.fig_ax.set_ylim(-180, 180)
-        self.fig_ax.set_xlabel("phi bot (°)", fontsize=12)
+        self.fig_ax.set_xlabel("phi bot (°)", fontsize=15*GUI_scale)
         self.fig_ax.set_xlim(-180, 180)
         try:
             self.g_colorbar.ax.clear()
@@ -536,7 +537,7 @@ class GUI(ctk.CTk):
         self.EnergyFieldEntry.insert(0, str(self.EnergyFieldValue))
         self.EnergyFieldEntry.configure(state="disabled")
         title = "Energy Landscape at " + str(self.EnergyFieldValue) + " mT"
-        self.fig_ax.set_title(title, fontsize=13)
+        self.fig_ax.set_title(title, fontsize=16*GUI_scale)
         
         g_calc = MacrospinModel(gui=root, h_sweep=[], param_values=self.param_values)
         g = []
@@ -771,6 +772,9 @@ class GUI(ctk.CTk):
         
         for button in self.disable_buttons:
             button.configure(state="normal")
+        self.FM1_dMs_calc.enableButton()
+        self.FM2_dMs_calc.enableButton()
+        
 
 
     def newThreadMHsim(self):
@@ -779,6 +783,8 @@ class GUI(ctk.CTk):
     def MHsim(self):
         for button in self.disable_buttons:
             button.configure(state="disabled")
+        self.FM1_dMs_calc.disableButton()
+        self.FM2_dMs_calc.disableButton()
         self.updateParamValues()
 
         if None in self.param_values or (self.param_values[4] == 0 and self.param_values[5] == 0):
@@ -814,6 +820,8 @@ class GUI(ctk.CTk):
 
         for button in self.disable_buttons:
             button.configure(state="normal")
+        self.FM1_dMs_calc.enableButton()
+        self.FM2_dMs_calc.enableButton()
 
 
     def newThreadMHfit(self):
@@ -850,6 +858,8 @@ class GUI(ctk.CTk):
         
         for button in self.disable_buttons:
             button.configure(state="disabled")
+        self.FM1_dMs_calc.disableButton()
+        self.FM2_dMs_calc.disableButton()
 
         self.sim_H = self.exp_H.copy()     # needed for plotting purposes
         MH_fit = MacrospinModel(gui=root, h_sweep=self.exp_H, param_values=self.param_values, exp_M=self.exp_M, fit_paras=fit_paras,
@@ -866,6 +876,8 @@ class GUI(ctk.CTk):
         if len(fitted_paras) == 0:
             for button in self.disable_buttons:
                 button.configure(state="normal")
+            self.FM1_dMs_calc.enableButton()
+            self.FM2_dMs_calc.enableButton()
             return
 
         # do final simulation with final fit parameters

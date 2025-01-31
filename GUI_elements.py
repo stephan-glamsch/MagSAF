@@ -71,6 +71,12 @@ class ThicknessMsCalculator():
         self.d.delete(0, "end")
         self.d.insert(0, str(value))
 
+    def disableButton(self):
+        self.calc_but.configure(state="disabled")
+
+    def enableButton(self):
+        self.calc_but.configure(state="normal")
+
 
 class Parameter():
     def __init__(self, gui, parent, row, param, start_value, lower, upper, fit=False):
