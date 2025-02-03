@@ -68,11 +68,11 @@ class MacrospinModel():
             popsize = 8
 
         try:
-            global_fitted_paras = o.differential_evolution(self.diff_evo_fit, bounds=self.bnds, x0=self.fit_paras, maxiter=maxiter, popsize=popsize, polish=False)
+            global_fitted_paras = o.differential_evolution(self.fit_cost, bounds=self.bnds, x0=self.fit_paras, maxiter=maxiter, popsize=popsize, polish=False)
             self.gui.writeConsole("Global Fit success: " + str(global_fitted_paras.success))
             self.gui.writeConsole("Global Fit message: " + str(global_fitted_paras.message))
             self.cur_fit_type = "Polish"
-            polished_fit_paras = o.minimize(self.diff_evo_fit, global_fitted_paras.x, method='L-BFGS-B', bounds=self.bnds, options={"ftol": 1e-4})
+            polished_fit_paras = o.minimize(self.fit_cost, global_fitted_paras.x, method='L-BFGS-B', bounds=self.bnds, options={"ftol": 1e-4})
             self.gui.writeConsole("Polish Fit success: " + str(polished_fit_paras.success))
             self.gui.writeConsole("Polish Fit message: " + str(polished_fit_paras.message))
             return list(polished_fit_paras.x)
@@ -84,12 +84,12 @@ class MacrospinModel():
             return []
         
 
-    def diff_evo_fit(self, paras, *args):
+    def fit_cost(self, paras, *args):
         M, phiA, phiB = self.calculateMH(self.h_sweep, paras)
         if len(M) == 0: raise Exception # if we pressed the stop button, we raise an Exception to stop fitting
         FOM = self.gui.getFOM(sim_M=M)
         return FOM
-
+    
 
     def calculateMH(self, h_sweep=[], *paras):
         # First we setup some things for the Progress Bar
@@ -137,27 +137,30 @@ class MacrospinModel():
             phiH_at_h = normalizeRadian(phiH + np.pi) if h < 0 else phiH
 
             # find local minimum in G(phiA, phiB) for new external field value, using the previous macrospin angles (phiA, phiB) as initial parameters
-            phiAB_new = o.minimize(self.get_G, (phiA_i, phiB_i), args=(h, phiH_at_h), method="newton-cg", jac=True, hess=self.get_G_hess, options={"xtol": 1e-15})
+            phiAB_new = o.minimize(self.get_G, (phiA_i, phiB_i), args=(h, phiH_at_h), method="newton-cg", jac=True, hess=self.get_G_hess, options={"xtol": 1e-12})
 
-            # check if new phiA or phiB values were found or whether they are the same as before
-            # if they didnt change, check if they really are inside a local minima and not a local maxima
-            # we test this by calculating the jacobian and hessian at the current (phiA, phiB) position
-            # if the gradient is zero (we use < 1E-10 as cutoff) and the determinante of the hessian and also d2g[0,0] are positive, we are not in a minimum
-            if math.isclose(phiAB_new.x[0], phiA_i, abs_tol=1e-4) and math.isclose(phiAB_new.x[1], phiB_i, abs_tol=1e-4):   # absolute tolerance is 0.006°
-                inc = 2 * np.pi / 180     # 1° in radians
-                guesses = [(phiA_i+inc, phiB_i), (phiA_i, phiB_i+inc), (phiA_i-inc, phiB_i), (phiA_i, phiB_i-inc)]
+            # check whether we are stuck on a terrace point / local maxima
+            if math.isclose(phiAB_new.x[0], phiA_i, abs_tol=1e-2) and math.isclose(phiAB_new.x[1], phiB_i, abs_tol=1e-2):   # absolute tolerance is 0.6°
+                inc = np.pi/180     # 1° in radians
+                guesses = [(phiA_i+inc, phiB_i), (phiA_i, phiB_i+inc), (phiA_i-inc, phiB_i), (phiA_i, phiB_i-inc), 
+                           (phiA_i+inc, phiB_i+inc), (phiA_i+inc, phiB_i-inc), (phiA_i-inc, phiB_i-inc), (phiA_i-inc, phiB_i+inc)]
                 g, dg = self.get_G((phiA_i, phiB_i), h, phiH_at_h)
                 d2g, det = self.get_G_hess((phiA_i, phiB_i), h, phiH_at_h, type="det")
-                best_guess = [(phiA_i, phiB_i), dg]
-                if det < 0 or det == 0 or (abs(dg[0]) < 1E-7 and abs(dg[1]) < 1E-7 and det > 0 and d2g[0,0] < 0):
-                    # we are not in a minimum, so lets check the 4 guesses with incrementell 1° steps in phiA and phiB
-                    # then we go the direction of the highest, negative gradient
+                print("H: " + str(h) + " det: " + str(det) + " d2g: " + str(d2g[0,0]) + " " + str(d2g[1,1]))
+                best_guess = [(phiA_i, phiB_i), dg, d2g, det]
+                while det < 0 or det == 0 or (abs(dg[0]) < 1E-7 and abs(dg[1]) < 1E-7 and det > 0 and d2g[0,0] < 0):
+                    # we are not in a minimum
                     for i, guess in enumerate(guesses):
                         g, dg = self.get_G(guess, h, phiH_at_h)
-                        if min(dg) < min(best_guess[1]):
-                            best_guess = [guess, dg]
-                    # finally we search again for the local minimum in G(phiA, phiB) with the new start parameters to get off of the local maximum
-                    phiAB_new = o.minimize(self.get_G, best_guess[0], args=(h, phiH_at_h), method="newton-cg", jac=True, hess=self.get_G_hess, options={"xtol": 1e-15})
+                        d2g, det = self.get_G_hess(guess, h, phiH_at_h, type="det")
+                        if sum(dg) < sum(best_guess[1]) and det > 0:
+                            best_guess = [guess, dg, d2g, det]
+                            break
+                    phiAB_new = o.minimize(self.get_G, best_guess[0], args=(h, phiH_at_h), method="newton-cg", jac=True, hess=self.get_G_hess, options={"xtol": 1e-12})
+                    dg, d2g, det = best_guess[1:]
+                    inc += np.pi/180
+                    guesses = [(phiA_i+inc, phiB_i), (phiA_i, phiB_i+inc), (phiA_i-inc, phiB_i), (phiA_i, phiB_i-inc),
+                               (phiA_i+inc, phiB_i+inc), (phiA_i+inc, phiB_i-inc), (phiA_i-inc, phiB_i-inc), (phiA_i-inc, phiB_i+inc)]
 
             M_at_H = self.get_MvH(phiAB_new.x, phiH_at_h)
             M.append(M_at_H)
@@ -235,9 +238,11 @@ class MacrospinModel():
         dg_phiB /= d_Ms_B * (abs(h) + 0.5 * hani_B) + abs(J1) + abs(J2)
 
         return g, (dg_phiA, dg_phiB)
+    
 
-
-    def get_G_hess(self, phis, h, phiH, type=None):
+    def get_G_hess(self, phis, h, phiH=None, type=None):
+        if phiH == None:
+            phiH = normalizeRadian(self.param_values[8] + np.pi) if h < 0 else self.param_values[8]
         phiA, phiB = phis
         d_Ms_A, hani_A, phiani_A, J1, J2, d_Ms_B, hani_B, phiani_B = self.param_values[:8]
 
@@ -247,15 +252,9 @@ class MacrospinModel():
         G_hess[1,0] = - J1 * np.cos(phiA - phiB) - 2 * J2 * np.cos(2*phiA - 2*phiB)
         G_hess[1,1] = d_Ms_B * (abs(h) * np.cos(phiB - phiH) + hani_B * np.cos(2*(phiB - phiani_B))) + J1 * np.cos(phiA - phiB) + 2 * J2 * np.cos(2*phiA-2*phiB)    # d2G_dphiB2
         G_hess[0,1] = - J1 * np.cos(phiA - phiB) - 2 * J2 * np.cos(2*phiA - 2*phiB)
-        det = np.linalg.det(G_hess)
-
-        # normalize hessian to max values
-        G_hess[0,0] /= (d_Ms_A * (abs(h) + hani_A) + abs(J1) + 2*abs(J2))
-        G_hess[1,0] /= (abs(J1) + 2*abs(J2)) 
-        G_hess[1,1] /= (d_Ms_B * (abs(h) + hani_B) + abs(J1) + 2*abs(J2))
-        G_hess[0,1] /= (abs(J1) + 2*abs(J2)) 
 
         if type == "det":
+            det = G_hess[0,0] * G_hess[1,1] - G_hess[1,0] * G_hess[0,1]
             return G_hess, det
         else:
             return G_hess
