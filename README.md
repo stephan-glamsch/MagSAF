@@ -1,8 +1,8 @@
 # Welcome to MagSAF's documentation!
 
-MagSAF is a GUI for fast and easy simulations of magnetic hysteresis loops of synthetic antiferromagnets (SAFs). Its target audience are reasearchers who want to get into the field of SAFs. With this software you can get familiar with the influence all of the magnetic parameters have on the hysteresis loop but also fit your experimental data to extract magnetic parameters. The simulations are currently based on a macrospin model and the software assumes an in-plane easy axis SAF. It is also possible to simulate and fit uniaxial, magnetic anisotropies.
+MagSAF is a GUI for fast and easy simulations of magnetic hysteresis loops of synthetic antiferromagnets (SAFs). Its target audience are reasearchers who want to get into the field of SAFs. With this software you can get familiar with the influence all magnetic parameters have on the hysteresis loop but also fit your experimental data to extract those magnetic parameters. The simulations are currently based on a macrospin model and the software assumes an in-plane easy axis SAF. It is also possible to simulate and fit uniaxial, magnetic anisotropies in both ferromagnetic layers.
 
-In the future, more theoretical models, out-of-plane SAFs as well as more anisotropy options are planned.
+In the future, more theoretical models, out-of-plane SAFs as well as more anisotropy options are planned. Any help in this regard is much appreciated.
 
 ![Screenshot of the GUI](readme_files/gui_screenshot.png)
 
@@ -10,20 +10,23 @@ In the future, more theoretical models, out-of-plane SAFs as well as more anisot
 1. [How to install](#how-to-install)
 2. [How to use](#how-to-use)
    - [Loading experimental data](#loading-experimental-data)
+   - [Other plots](#other-plots)
+   - [Advanced: Asymmetric SAFs](#advanced-asymmetric-safs)
 3. [Theoretical Framework](#theoretical-framework)
    - [What is a synthetic antiferromagnet (SAF)?](#what-is-a-synthetic-antiferromagnet-saf)
    - [Coordinate System](#coordinate-system)
    - [Macrospin Model](#macrospin-model)
 4. [Fitting procedure](#fitting-procedure)
    - [Figure of Merit](#figure-of-merit)
+   - [Fit Boundaries](#fit-boundaries)
 
 ## How to install
 
-MagSAF was developed and tested on Windows 11 with python 3.11.8. All required python packages are listed in [requirements.txt](requirements.txt). You can either download the source code, install all required packages with
+MagSAF was developed and tested on **Windows 11** with **python 3.11.8**. All required python packages are listed in [requirements.txt](requirements.txt). You can either download the source code, install all required packages with
 ```
 python -m pip install -r requirements.txt
 ```
-and then executing `MagSAF_GUI.py` or you can go to XYZ and download a auto-py-to-exe generated .exe file of MagSAF.
+and then execute `MagSAF_GUI.py` or you can go to XYZ and download a auto-py-to-exe generated .exe file of MagSAF.
 
 ## How to use 
 
@@ -33,6 +36,17 @@ The data file has to be a .txt file with two columns separated by either '\t' or
 
 > [!IMPORTANT]
 > It is assumed that you want to fit a magnetic hysteresis loop $M(H)$ which is already normalized to the magnetic volume of your sample. Becasue of this, you have to specify the total, magnetic film thickness (the one you assumed to normalize your $M(H)$ data) in Step 1 of the **Simulation / Fit Procedure** section before you can load your data file.
+
+### Other Plots
+
+Besides the magnetic hysteresis $dM(H)$, the user can also plot the macrospin rotation and energy landscape $G(\phi^A, \phi^B)$ during the hysteresis. These additional information let the user check whether the simulation worked correctly or whether an error occurred. The energy landscape $G(\phi^A, \phi^B)$ plot includes the position of the simulated equilibrium state of the macrospins. This should always be in a local minimum. If it isn't, an error must have occurred.
+
+### Advanced: Asymmetric SAFs
+
+When the ferromagnetic layers of your SAF are asymmetric in thickness or saturation magnetization, you can't just fit one $dM^i_s$ parameter because the total saturation magnetization of your SAF must stay constant. To do so, you can check one of the checkboxes in the *Link?* column next to one of the $dM^i_s$ parameters and check the *Fit?* Checkbox of the other $dM^i_s$ parameter. If you do so, the *linked* parameter always gets adjusted to the *fitted* one to keep a constant total saturation magnetization. For this to work, you have to also add the total $M_s$ in **Step 1** of the **Simulation / Fit Procedure**.
+
+> [!TIP]
+> After fitting your $dM^i_s$ parameter(s) you can either select *"Calculate d from Ms"* or *"Calculated Ms from d"* form the dropdown menu, input the one required parameter and then press *Calculate* to quickly get the fitted thickness $d$ or saturation magnetization $M_s$.
 
 ## Theoretical Framework
 
@@ -48,9 +62,9 @@ Currently, only in-plane SAFs and their simulation/fitting is supported. It is a
 
 ### Macrospin Model
 
-Currently, only a macrospin model is implemented. This model simplifies all magnetic moments in one of the ferromagnetic layers to one "macrospin" - similar to the Stoner-Wohlfarth model. Thus, we have two layers ($i$ = $A$, $B$) with their individual macrospin angles $\phi^i$, saturation magnetizations $M^i$, thicknesses $d^i$ and uniaxial anisotropy fields $H_{ani}^i$ and angles $\phi_{ani}^i$.
+Right now, only a macrospin model is implemented. This model simplifies all magnetic moments in one of the ferromagnetic layers to one "macrospin" - similar to the Stoner-Wohlfarth model. Thus, we have two layers ($i$ = $A$, $B$) with their individual macrospin angles $\phi^i$, saturation magnetizations $M^i$, thicknesses $d^i$ and uniaxial anisotropy fields $H_{ani}^i$ and angles $\phi_{ani}^i$.
 
-The magnetic, free energy of this bilayer system is given by the Zeeman energies, the uniaxial, magnetic anisotropies and the bilinear $J_1$ and biquadratic $J_2$ RKKY coupling:
+The magnetic, free energy $G$ of this bilayer system is given by the Zeeman energies, the uniaxial, magnetic anisotropies and the bilinear $J_1$ and biquadratic $J_2$ RKKY coupling:
 ```math
 \begin{align*}
 G \:\: = &-d^A \: M^A \: [ \: H \: \text{cos}(\phi^A - \phi^H) \: + \: 0.5 \: H_{ani}^A \: \text{cos}(\phi^A - \phi_{ani}^A)^2] \
@@ -79,9 +93,9 @@ First, a global minimizer is used to find good starting parameters for a subsequ
 
 The Figure of Merit is calculated by the following equation:
 
-$$\large FOM = \frac{1}{N} \sum_i \frac{\Delta H_i}{\Delta H_{max}} \cdot |1 - \frac{dM^{sim}_i}{dM^{exp}_i}|$$
+$$\large FOM = \frac{1}{N} \sum_j \frac{\Delta H_j}{\Delta H_{max}} \cdot |1 - \frac{dM^{sim}_j}{dM^{exp}_j}|$$
 
-$N$ is the amount of data points of the full hysteresis loop, $\sum_i$ sums over all data points, $\Delta H_{i}$ is equal to $|H_{i-1} - H_i| + |H_i - H_{i+1}|$ and $\Delta H_{max}$ is the largest distance between neighboring data points in the full hysteresis loop. This first part eliminates over-weighting of specific field ranges, if the field step size changes during the hysteresis loop (e.g. smaller steps around zero field). $dM^{sim}_i$ and $dM^{exp}_i$ are the simulated and experimental $d \cdot M$ values of the respective data point, where $d \cdot M$ is the total, magnetic film thickness multiplied with the total magnetization.
+$N$ is the amount of data points of the full hysteresis loop, $\sum_j$ sums over all data points, $\Delta H_{j}$ is equal to $|H_{j-1} - H_j| + |H_j - H_{j+1}|$ and $\Delta H_{max}$ is the largest $\Delta H_{j}$ of the whole hysteresis loop. This first part eliminates over-weighting of specific field ranges, if the field step size changes during the hysteresis loop (e.g. smaller steps around zero field). $dM^{sim}_i$ and $dM^{exp}_i$ are the simulated and experimental $d \cdot M$ values of the respective data point, where $d \cdot M$ is the total, magnetic film thickness multiplied with the total magnetization.
 
 > [!TIP]
 > It is possible to deliberatly increase the weight of the FOM in specific field ranges. To do so, the user can set the transition fields between the antiferromagnetic (AFM) and canted (C) as well as between the canted (C) and ferromagnetic (FM) spin alignment (or any other field values) under **Fit Options**. Then, a *Fit Focus Region* can be picked (either AFM, C, FM or none). By doing so, the FOM of the picked region is multiplied by 3 to increase its weight. The regions are defined as:
@@ -92,3 +106,7 @@ $N$ is the amount of data points of the full hysteresis loop, $\sum_i$ sums over
 > \text{FM}:& H_{C-FM} &< |H\;|
 > \end{align*}
 > ```
+
+### Fit Boundaries
+
+Currently, it is not possible to fit without boundaries. The fit boundaries are the lower and upper values of the slider of the fitted parameter.
