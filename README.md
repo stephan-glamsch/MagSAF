@@ -26,7 +26,7 @@ MagSAF was developed and tested on **Windows 11** with **python 3.11.8**. All re
 ```
 python -m pip install -r requirements.txt
 ```
-and then execute `MagSAF_GUI.py` or you can go to XYZ and download a auto-py-to-exe generated .exe file of MagSAF.
+and then execute `MagSAF_GUI.py` or you can go to the latest release version and download an auto-py-to-exe generated .exe file of MagSAF.
 
 ## How to use 
 
@@ -51,8 +51,6 @@ When the ferromagnetic layers of your SAF are asymmetric in thickness or saturat
 ## Theoretical Framework
 
 ### What is a synthetic antiferromagnet (SAF)?
-
-TODO: add some sources
 
 A synthetic antiferromagnet (SAF) is a magnetic, thin film heterostructure. It consists of 2 ferromagnetic layers (e.g. Co, Fe, etc.) which are separated by a very thin, conductive, non-magnetic layer (e.g. Ru). In such a layer stack, an indirect, interlayer coupling arises which is usually described by the Ruderman-Kittel-Kasuya-Yosida (RKKY) model. The coupling can prefer any type of alignment between the 2 ferromagnetic layers (parallel, anti-parallel or non-collinear) depending on the material parameters - especially the thickness of the non-magnetic layer. The main focus, however, lies on the anti-parallel and non-collinear coupling.
 
@@ -110,3 +108,7 @@ $N$ is the amount of data points of the full hysteresis loop, $\sum_j$ sums over
 ### Fit Boundaries
 
 Currently, it is not possible to fit without boundaries. The fit boundaries are the lower and upper values of the slider of the fitted parameter.
+
+# Credits
+
+The auto-py-to-exe generated exe file of MagSAF uses an icon from [xnimrodx](https://www.freepik.com/icon/3d-model_5846257#fromView=search&page=1&position=60&uuid=06e2772a-4f43-4d64-925a-02484094c58e) from freepik.com.
