@@ -146,7 +146,6 @@ class MacrospinModel():
                            (phiA_i+inc, phiB_i+inc), (phiA_i+inc, phiB_i-inc), (phiA_i-inc, phiB_i-inc), (phiA_i-inc, phiB_i+inc)]
                 g, dg = self.get_G((phiA_i, phiB_i), h, phiH_at_h)
                 d2g, det = self.get_G_hess((phiA_i, phiB_i), h, phiH_at_h, type="det")
-                print("H: " + str(h) + " det: " + str(det) + " d2g: " + str(d2g[0,0]) + " " + str(d2g[1,1]))
                 best_guess = [(phiA_i, phiB_i), dg, d2g, det]
                 while det < 0 or det == 0 or (abs(dg[0]) < 1E-7 and abs(dg[1]) < 1E-7 and det > 0 and d2g[0,0] < 0):
                     # we are not in a minimum
