@@ -33,7 +33,7 @@ and then execute `MagSAF_GUI.py` or you can go to the latest release version and
 
 ### Loading experimental data
 
-The data file has to be a .txt file with two columns separated by either '\t' or whitespaces. The first column has to be the magnetic field and the second one the magnetization. For the magnetic field, supported units are 'Oe', 'mT' and 'T' and for the magnetization they are 'A/m' and 'kA/m'. Furthermore, the file is assumed to have two header lines which are being skipped on loading.
+The data file has to be a .txt file with two columns separated by either '\t' or whitespaces. The first column has to be the magnetic field and the second one the magnetization. For the magnetic field, supported units are 'Oe', 'mT' and 'T' and for the magnetization they are 'A/m' and 'kA/m'. It is assumed that the first row is some header, the second row should include the units of each column and the actual data should start in the third row.
 
 > [!IMPORTANT]
 > It is assumed that you want to fit a magnetic hysteresis loop $M(H)$ which is already normalized to the magnetic volume of your sample. Becasue of this, you have to specify the total, magnetic film thickness (the one you assumed to normalize your $M(H)$ data) in Step 1 of the **Simulation / Fit Procedure** section before you can load your data file.
