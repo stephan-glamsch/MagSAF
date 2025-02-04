@@ -19,6 +19,7 @@ In the future, more theoretical models, out-of-plane SAFs as well as more anisot
 4. [Fitting procedure](#fitting-procedure)
    - [Figure of Merit](#figure-of-merit)
    - [Fit Boundaries](#fit-boundaries)
+5. [It's a Bug not a Feature](#its-a-bug-not-a-feature)
 
 ## How to install
 
@@ -79,7 +80,7 @@ M \: = \: [d^A \: M_s^A \: \text{cos}(\phi^A - \phi^H) \: + \: d^B \: M_s^B \: \
 ```
 
 > [!NOTE]
-> This model can't distinguish between the thickness $d^i$ and saturation magnetization $M_s^i$ of one layer, since both parameters always come in pairs. This is why, their product $d^i M_s^i$ is used for simulations/fits. Because those values are not very intuitive, a $d^i M_s^i$ calculator is implemented in the GUI.
+> This model can't distinguish between the thickness $d^i$ and saturation magnetization $M_s^i$ of one layer, since both parameters always come as a pair. This is why, their product $d^i M_s^i$ is used for simulations/fits. Because those values are not very intuitive, a $d^i M_s^i$ calculator is implemented in the GUI.
 >
 > This is also why we plot $d M$ vs $H$ and why you have to add the total, magnetic thickness $d_{tot}$ before loading experimental $M(H)$ data.
 
@@ -108,6 +109,12 @@ $N$ is the amount of data points of the full hysteresis loop, $\sum_j$ sums over
 ### Fit Boundaries
 
 Currently, it is not possible to fit without boundaries. The fit boundaries are the lower and upper values of the slider of the fitted parameter.
+
+# It's a Bug not a Feature
+
+You may see this list as a "I might fix this in the future" or "Be aware of these *features*" list:
+
+- In certain cases, incorrect macrospin rotations can occur if the simulation field steps $\Delta \mu_0 H$ are too large. Be aware of this, when fitting experimental data because experimental field steps are used for simulations and fits if they are available.
 
 # Credits
 
