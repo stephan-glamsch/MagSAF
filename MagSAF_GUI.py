@@ -895,10 +895,16 @@ class GUI(ctk.CTk):
     def exportPlotData(self):
         self.updateParamValues()
         try:
-            if self.cur_plot == "M(H)":
-                sim_M = 1e-3 * self.sim_M / self.d_tot_nom_val # sim_M in kA/m
+            if self.cur_plot == "M(H)" and self.d_tot_nom_val != 0:
+                sim_M = 1e-3 * np.asarray(self.sim_M, dtype=np.float64) / self.d_tot_nom_val # sim_M in kA/m
                 sim_data = list(np.stack((self.sim_H, sim_M)).T)
                 save_data = "H\tM\n[T]\t[kA/m]\n"
+                for i in range(len(sim_data)):
+                    save_data += str(sim_data[i][0]) + "\t" + str(sim_data[i][1]) + "\n"
+            elif self.cur_plot == "M(H)" and self.d_tot_nom_val == 0:
+                sim_M = 1e3 * np.asarray(self.sim_M, dtype=np.float64) # sim_M in mA
+                sim_data = list(np.stack((self.sim_H, sim_M)).T)
+                save_data = "H\td*M\n[T]\t[mA]\n"
                 for i in range(len(sim_data)):
                     save_data += str(sim_data[i][0]) + "\t" + str(sim_data[i][1]) + "\n"
             elif self.cur_plot == "macrospins":
@@ -911,6 +917,8 @@ class GUI(ctk.CTk):
                 save_data = "H\tphi_top_FM\tphi_bot_FM\n[T]\t[deg]\t[deg]\n"
                 for i in range(len(sim_data)):
                     save_data += str(sim_data[i][0]) + "\t" + str(sim_data[i][1]) + "\t" + str(sim_data[i][2]) + "\n"
+            else:
+                return
             save_data = save_data[:-1]
         except:
             return

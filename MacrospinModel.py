@@ -226,15 +226,21 @@ class MacrospinModel():
         g = g_A + g_B + g_RKKY
 
         # normalize energy to max values
-        g /= d_Ms_A * (abs(h) + hani_A/2) + d_Ms_B * (abs(h) + hani_B/2) + abs(J1) + abs(J2)
+        g_max = d_Ms_A * (abs(h) + hani_A/2) + d_Ms_B * (abs(h) + hani_B/2) + abs(J1) + abs(J2)
+        if g_max != 0:
+            g /= g_max
 
         # calculate gradients along phiA and phiB
         dg_phiA = d_Ms_A * (abs(h) * np.sin(phiA - phiH) + 0.5 * hani_A * np.sin(2*(phiA - phiani_A))) + J1 * np.sin(phiA-phiB) + J2 * np.sin(2*phiA-2*phiB)
         dg_phiB = d_Ms_B * (abs(h) * np.sin(phiB - phiH) + 0.5 * hani_B * np.sin(2*(phiB - phiani_B))) - J1 * np.sin(phiA-phiB) - J2 * np.sin(2*phiA-2*phiB)
         
         # normalize gradients to max values
-        dg_phiA /= d_Ms_A * (abs(h) + 0.5 * hani_A) + abs(J1) + abs(J2)
-        dg_phiB /= d_Ms_B * (abs(h) + 0.5 * hani_B) + abs(J1) + abs(J2)
+        dg_phiA_max = d_Ms_A * (abs(h) + 0.5 * hani_A) + abs(J1) + abs(J2)
+        dg_phiB_max = d_Ms_B * (abs(h) + 0.5 * hani_B) + abs(J1) + abs(J2)
+        if dg_phiA_max != 0:
+            dg_phiA /= d_Ms_A * (abs(h) + 0.5 * hani_A) + abs(J1) + abs(J2)
+        if dg_phiB_max != 0:
+            dg_phiB /= d_Ms_B * (abs(h) + 0.5 * hani_B) + abs(J1) + abs(J2)
 
         return g, (dg_phiA, dg_phiB)
     
