@@ -11,7 +11,7 @@ import threading
 import numpy as np
 
 from GUI_elements import Parameter, ThicknessMsCalculator
-from MacrospinModel import MacrospinModel
+from MacrospinModel import MacrospinModel, EffectiveMacrospinModel
 
 plt.style.use('dark_background')
 ctk.set_appearance_mode("Dark")
@@ -504,6 +504,7 @@ class GUI(ctk.CTk):
         else:
             steps = 100
         self.EnergyFieldSlider.configure(number_of_steps=steps-1, from_=steps-1)
+        self.EnergyFieldSlider.set(0)
 
         self.fig_ax.set_title("Energy Landscape", fontsize=16*GUI_scale)
         self.fig_ax.set_ylabel("phi top (°)", fontsize=15*GUI_scale)
@@ -649,6 +650,7 @@ class GUI(ctk.CTk):
 
 
     def removeSim(self):
+        self.EnergyFieldSlider.set(0)
         self.sim_H, self.sim_M, self.phiA, self.phiB = [], [], [], []
         self.drawPlot(self.plot_seg_but.get())
 
@@ -802,6 +804,7 @@ class GUI(ctk.CTk):
             self.sim_H = self.exp_H
         
         MH_sim = MacrospinModel(gui=root, h_sweep=self.sim_H, param_values=self.param_values)
+        #MH_sim = EffectiveMacrospinModel(gui=root, h_sweep=self.sim_H, param_values=self.param_values)
         self.sim_M, self.phiA, self.phiB = MH_sim.calculateMH()   # simulate M(H)
 
         # check if only down field sweep was simulated
