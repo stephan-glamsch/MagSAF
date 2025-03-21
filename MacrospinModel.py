@@ -18,6 +18,7 @@ def normalizeRadian(phi):      # reduce angles to (-pi < phi < pi)
 class MacrospinModel():
     def __init__(self, gui, h_sweep, param_values, exp_M=None, fit_paras=None, fit_para_ind=[], fit_type=None, bnds=None, full_hyst="off"):
         self.gui = gui
+        if self.gui is not None: self.gui.prog_bar.set(0)
         self.h_sweep = list(h_sweep)
         self.param_values = param_values
         self.exp_M = exp_M
@@ -26,7 +27,6 @@ class MacrospinModel():
         self.fit_type = fit_type
         self.para_scale = [5e-3, 1e-3, 1, 1e-4, 1e-4, 5e-3, 1e-3, 1]
         self.para_scale = [self.para_scale[i] for i in fit_para_ind]
-        self.gui.prog_bar.set(0)
         self.fitting = False
         self.bnds = bnds
         self.full_hyst = full_hyst
@@ -95,13 +95,13 @@ class MacrospinModel():
         # First we setup some things for the Progress Bar
         # Also if we fit, h_sweep is given by o.curve_fit to this function, 
         # otherwise if we just simulate we need to get it from the class initialization
-        if self.fitting == True:
+        if self.fitting == True and self.gui is not None:
             txt = self.cur_fit_type + " Fit (iteration " + str(self.fit_iteration) + ")"
             self.gui.prog_bar_label.configure(text=txt)
             self.fit_iteration += 1
         elif self.fitting == False:
             h_sweep = self.h_sweep
-            self.gui.prog_bar_label.configure(text="Simulation Progress Bar")
+            if self.gui is not None: self.gui.prog_bar_label.configure(text="Simulation Progress Bar")
         last_progbar_update = 0
         update_interval = int(len(h_sweep) * 20 / 800)
 
@@ -120,7 +120,7 @@ class MacrospinModel():
 
         for i, h in enumerate(h_sweep):
             # check if progress bar should be update
-            if i - last_progbar_update == update_interval:
+            if i - last_progbar_update == update_interval and self.gui is not None:
                 if self.gui.stopDaemon_bool == True:
                     self.gui.stopDaemon_bool = False
                     self.gui.prog_bar.set(0)
@@ -130,7 +130,7 @@ class MacrospinModel():
                 elif self.full_hyst == "on":
                     self.gui.prog_bar.set(i/len(h_sweep))
                 last_progbar_update = i
-            elif i == len(h_sweep) - 1:
+            elif i == len(h_sweep) - 1 and self.gui is not None:
                 self.gui.prog_bar.set(1)
 
             # flip phiH by 180° if we go to negative field values
@@ -138,7 +138,7 @@ class MacrospinModel():
 
             # find local minimum in G(phiA, phiB) for new external field value, using the previous macrospin angles (phiA, phiB) as initial parameters
             phiAB_new = o.minimize(self.get_G, (phiA_i, phiB_i), args=(h, phiH_at_h), method="newton-cg", jac=True, hess=self.get_G_hess, options={"xtol": 1e-12})
-
+            
             # check whether we are stuck on a terrace point / local maxima
             if math.isclose(phiAB_new.x[0], phiA_i, abs_tol=1e-2) and math.isclose(phiAB_new.x[1], phiB_i, abs_tol=1e-2):   # absolute tolerance is 0.6°
                 inc = np.pi/180     # 1° in radians
@@ -230,22 +230,12 @@ class MacrospinModel():
         dg_phiB = d_Ms_B * (abs(h) * np.sin(phiB - phiH) + 0.5 * hani_B * np.sin(2*(phiB - phiani_B))) - J1 * np.sin(phiA-phiB) - J2 * np.sin(2*phiA-2*phiB)
         
         # normalize energy to max values
-        if J1 != 0 and abs(J1) > abs(J2):
+        if J1 != 0 and abs(J1) > 2*abs(J2):
             g /= abs(J1)
-        elif J2 != 0 and abs(J2) > abs(J1):
+        elif J2 != 0 and 2*abs(J2) > abs(J1):
             g /= abs(J2)
         elif (d_Ms_A + d_Ms_B) != 0 and abs(h) != 0:
             g /= (d_Ms_A + d_Ms_B) * abs(h)
-
-        # TODO: think whether this is the smartest way to normalize the gradients (I think it isnt because this maximum 
-        # value can never be reached because there is no such alignment of macrospins), but if I change it I have to change
-        # the dg cutoff values
-        dg_phiA_max = d_Ms_A * (abs(h) + 0.5 * hani_A) + abs(J1) + abs(J2)
-        dg_phiB_max = d_Ms_B * (abs(h) + 0.5 * hani_B) + abs(J1) + abs(J2)
-        if dg_phiA_max != 0:
-            dg_phiA /= dg_phiA_max
-        if dg_phiB_max != 0:
-            dg_phiB /= dg_phiB_max
 
         return g, (dg_phiA, dg_phiB)
     
@@ -283,24 +273,19 @@ class MacrospinModel():
 
 class EffectiveMacrospinModel(MacrospinModel):
     '''
-    This is a test!
+    This is a test! Also it is still under construction. Nothing to see here.
 
-    We try to approximate the vertical canting of spins over the ferromagnetic layer thickness via a phenomenological energy term:
-
-    g_cant = - eta * ((d_Ms * H)^2 / (np.sqrt((J1 + 2*J2) * Aex / a))) * np.cos(phi - phiH)
-
-    eta: a phenomenological scaling factor.
+    We try to approximate the vertical canting of spins over the ferromagnetic layer thickness via a phenomenological energy term
 
     We assume the exchange stiffness 'Aex' and atomic spacing 'a' of both layers to be identical.
-    g_cant has the same angle dependency as the Zeeman energy, so it can be formulated together with that.
+    g_cant has the same angle dependency as the Zeeman energy.
     '''
 
-    def __init__(self, gui, h_sweep, param_values, exp_M=None, fit_paras=None, fit_para_ind=[], fit_type=None, bnds=None, full_hyst="off", Aex=1E-11, a=3E-10):
+    def __init__(self, gui, h_sweep, param_values, exp_M=None, fit_paras=None, fit_para_ind=[], fit_type=None, bnds=None, full_hyst="off", Aex=1):
         super().__init__(gui, h_sweep, param_values, exp_M, fit_paras, fit_para_ind, fit_type, bnds, full_hyst)
 
-        self.Aex = Aex      # J/m
-        self.a = a          # m (atomic spacing)
-        self.eta = 0.05     # phenomenological scaling factor
+        self.Aex = Aex      # 1E-11 J/m
+        self.eta = 0.0001     # phenomenological scaling factor
 
     
     # add additional energy term
@@ -311,15 +296,27 @@ class EffectiveMacrospinModel(MacrospinModel):
         d_Ms_A, hani_A, phiani_A, J1, J2, d_Ms_B, hani_B, phiani_B = self.param_values[:8]
 
         # calculate energy
-        g_A = - d_Ms_A * (abs(h) * np.cos(phiA - phiH) * (1 + (self.eta * d_Ms_A * abs(h))/np.sqrt(np.abs((J1 + 2*J2)) * self.Aex / self.a)) + 0.5 * hani_A * (np.cos(phiA - phiani_A))**2)
-        g_B = - d_Ms_B * (abs(h) * np.cos(phiB - phiH) * (1 + (self.eta * d_Ms_B * abs(h))/np.sqrt(np.abs((J1 + 2*J2)) * self.Aex / self.a)) + 0.5 * hani_B * (np.cos(phiB - phiani_B))**2)
+        g_A = - d_Ms_A * (abs(h) * np.cos(phiA - phiH) + 0.5 * hani_A * (np.cos(phiA - phiani_A))**2)
+        g_B = - d_Ms_B * (abs(h) * np.cos(phiB - phiH) + 0.5 * hani_B * (np.cos(phiB - phiani_B))**2)
         g_RKKY = - (J1 * np.cos(phiA - phiB) + J2 * (np.cos(phiA - phiB))**2)
-        g = g_A + g_B + g_RKKY
+        Hs = (J1*1e3 + 2*J2*1e3)**2/(2*(self.Aex/10 + 0.65)) * (1/(1e3*d_Ms_A) + 1/(1e3*d_Ms_B))   # saturation field?
+        if abs(h) <= Hs:
+            g_cant = - self.eta * (np.sin(5*abs(h)*np.pi/(3*Hs)) - 0.5*abs(h)/Hs - (3.5 * np.sin(5*abs(h)*np.pi/(10*Hs))**24)) * (np.cos(phiA - phiH) + np.cos(phiB - phiH))  # new energy term to approximate canting
+            dg_cant_phiA = self.eta * (np.sin(5*abs(h)*np.pi/(3*Hs)) - 0.5*abs(h)/Hs - (3.5 * np.sin(5*abs(h)*np.pi/(10*Hs))**24)) * np.sin(phiA - phiH)
+            dg_cant_phiB = self.eta * (np.sin(5*abs(h)*np.pi/(3*Hs)) - 0.5*abs(h)/Hs - (3.5 * np.sin(5*abs(h)*np.pi/(10*Hs))**24)) * np.sin(phiB - phiH)
+        else:
+            g_cant = 0
+            dg_cant_phiA = 0
+            dg_cant_phiB = 0
+        g = g_A + g_B + g_RKKY + g_cant
 
         # calculate gradients along phiA and phiB
-        dg_phiA = d_Ms_A * (abs(h) * np.sin(phiA - phiH) * (1 + (self.eta * d_Ms_A * abs(h))/np.sqrt(np.abs((J1 + 2*J2)) * self.Aex / self.a)) + 0.5 * hani_A * np.sin(2*(phiA - phiani_A))) + J1 * np.sin(phiA-phiB) + J2 * np.sin(2*phiA-2*phiB)
-        dg_phiB = d_Ms_B * (abs(h) * np.sin(phiB - phiH) * (1 + (self.eta * d_Ms_B * abs(h))/np.sqrt(np.abs((J1 + 2*J2)) * self.Aex / self.a)) + 0.5 * hani_B * np.sin(2*(phiB - phiani_B))) - J1 * np.sin(phiA-phiB) - J2 * np.sin(2*phiA-2*phiB)
+        dg_phiA = d_Ms_A * (abs(h) * np.sin(phiA - phiH) + 0.5 * hani_A * np.sin(2*(phiA - phiani_A))) + J1 * np.sin(phiA-phiB) + J2 * np.sin(2*phiA-2*phiB)
+        dg_phiB = d_Ms_B * (abs(h) * np.sin(phiB - phiH) + 0.5 * hani_B * np.sin(2*(phiB - phiani_B))) - J1 * np.sin(phiA-phiB) - J2 * np.sin(2*phiA-2*phiB)
         
+        dg_phiA += dg_cant_phiA
+        dg_phiB += dg_cant_phiB
+
         # normalize energy to max values
         if J1 != 0 and abs(J1) > abs(J2):
             g /= abs(J1)
@@ -327,17 +324,6 @@ class EffectiveMacrospinModel(MacrospinModel):
             g /= abs(J2)
         elif (d_Ms_A + d_Ms_B) != 0 and abs(h) != 0:
             g /= (d_Ms_A + d_Ms_B) * abs(h)
-
-        # TODO: think whether this is the smartest way to normalize the gradients (I think it isnt because this maximum 
-        # value can never be reached because there is no such alignment of macrospins), but if I change it I have to change
-        # the dg cutoff values
-        # TODO: lets ignore the additional energy term for now and see what happens
-        dg_phiA_max = d_Ms_A * (abs(h) + 0.5 * hani_A) + abs(J1) + abs(J2)
-        dg_phiB_max = d_Ms_B * (abs(h) + 0.5 * hani_B) + abs(J1) + abs(J2)
-        if dg_phiA_max != 0:
-            dg_phiA /= dg_phiA_max
-        if dg_phiB_max != 0:
-            dg_phiB /= dg_phiB_max
 
         return g, (dg_phiA, dg_phiB)
     
@@ -348,12 +334,24 @@ class EffectiveMacrospinModel(MacrospinModel):
         phiA, phiB = phis
         d_Ms_A, hani_A, phiani_A, J1, J2, d_Ms_B, hani_B, phiani_B = self.param_values[:8]
 
+        Hs = (J1*1e3 + 2*J2*1e3)**2/(self.Aex/10 + 0.65) * (1/(1e3*d_Ms_A) + 1/(1e3*d_Ms_B))   # saturation field?
+        if abs(h) <= Hs:
+            d2g_cant_phiAA = self.eta * (np.sin(5*abs(h)*np.pi/(3*Hs)) - 0.5*abs(h)/Hs - (3.5 * np.sin(5*abs(h)*np.pi/(10*Hs))**20)) * np.cos(phiA - phiH)
+            d2g_cant_phiBB = self.eta * (np.sin(5*abs(h)*np.pi/(3*Hs)) - 0.5*abs(h)/Hs - (3.5 * np.sin(5*abs(h)*np.pi/(10*Hs))**20)) * np.cos(phiB - phiH)
+        else:
+            d2g_cant_phiAA = 0
+            d2g_cant_phiBB = 0
+
+
         # calculate hessian
         G_hess = np.zeros((2,2))
-        G_hess[0,0] = d_Ms_A * (abs(h) * np.cos(phiA - phiH) * (1 + (self.eta * d_Ms_A * abs(h))/np.sqrt(np.abs((J1 + 2*J2)) * self.Aex / self.a)) + hani_A * np.cos(2*(phiA - phiani_A))) + J1 * np.cos(phiA - phiB) + 2 * J2 * np.cos(2*phiA-2*phiB)    # d2G_dphiA2
+        G_hess[0,0] = d_Ms_A * (abs(h) * np.cos(phiA - phiH) + hani_A * np.cos(2*(phiA - phiani_A))) + J1 * np.cos(phiA - phiB) + 2 * J2 * np.cos(2*phiA-2*phiB)    # d2G_dphiA2
         G_hess[1,0] = - J1 * np.cos(phiA - phiB) - 2 * J2 * np.cos(2*phiA - 2*phiB)
-        G_hess[1,1] = d_Ms_B * (abs(h) * np.cos(phiB - phiH) * (1 + (self.eta * d_Ms_B * abs(h))/np.sqrt(np.abs((J1 + 2*J2)) * self.Aex / self.a)) + hani_B * np.cos(2*(phiB - phiani_B))) + J1 * np.cos(phiA - phiB) + 2 * J2 * np.cos(2*phiA-2*phiB)    # d2G_dphiB2
+        G_hess[1,1] = d_Ms_B * (abs(h) * np.cos(phiB - phiH) + hani_B * np.cos(2*(phiB - phiani_B))) + J1 * np.cos(phiA - phiB) + 2 * J2 * np.cos(2*phiA-2*phiB)    # d2G_dphiB2
         G_hess[0,1] = - J1 * np.cos(phiA - phiB) - 2 * J2 * np.cos(2*phiA - 2*phiB)
+
+        G_hess[0,0] += d2g_cant_phiAA
+        G_hess[1,1] += d2g_cant_phiBB
 
         if type == "det":
             det = G_hess[0,0] * G_hess[1,1] - G_hess[1,0] * G_hess[0,1]
