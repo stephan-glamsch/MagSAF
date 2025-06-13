@@ -38,21 +38,25 @@ class WadgeDiscreteEnergyModel():
         
         # convert my param_values units to E. Wadge's units
         self.h_sweep = h_sweep
-        self.dA, self.MsA, self.AexA, self.J1, self.J2, self.dB, self.MsB, self.AexB, self.d, self.phiH = param_values
+        self.dA, self.MsA, self.AexA, self.HaniA, self.phianiA, self.J1, self.J2, self.dB, self.MsB, self.AexB, self.HaniB, self.phianiB, self.d, self.phiH = param_values
 
         self.dA *= 1e9  # nm
         self.dB *= 1e9  # nm
+        self.NA = int(self.dA*10/self.d)
+        self.NB = int(self.dB*10/self.d) 
         self.J1 *= 1e3  # mJ/m^2
         self.J2 *= 1e3  # mJ/m^2
-        htA = self.dA / 2   # half thickness in nm
-        htB = self.dB / 2   # half thickness in nm
-        self.NA = int(htA*10/self.d)
-        self.NB = int(htB*10/self.d)        
 
         self.AexA *= np.ones(self.NA-1)
         self.AexB *= np.ones(self.NB-1)
         self.MsA *= np.ones(self.NA)
         self.MsB *= np.ones(self.NB)
+
+        # unit conversions to match the continuous model
+        self.dMsA = self.MsA*self.d*0.1     # mA
+        self.dMsB = self.MsB*self.d*0.1     # mA
+        self.dAexA = 100*self.AexA/self.d    # mJ/m^2
+        self.dAexB = 100*self.AexB/self.d    # mJ/m^2
 
         #self.gui = gui
         #if self.gui is not None: self.gui.prog_bar.set(0)
@@ -71,22 +75,71 @@ class WadgeDiscreteEnergyModel():
         #self.best_FOM = 100000
         #self.linkedParas = False
 
+        
+        # I want a list of the H step density for FOM weighting later on
+        self.exp_H_steps = []
+        for i in range(len(self.h_sweep)):
+            if i == 0:
+                dH = 2 * np.abs(self.h_sweep[i] - self.h_sweep[i+1])
+            elif i == len(self.h_sweep)-1:
+                dH = 2 * np.abs(self.h_sweep[i-1] - self.h_sweep[i])
+            else:
+                dH = np.abs(self.h_sweep[i-1] - self.h_sweep[i]) + np.abs(self.h_sweep[i] - self.h_sweep[i+1])
+            self.exp_H_steps.append(dH)
 
-    def calculateMH(self, tol=1e-4):
+
+    def curve_fitMH(self, H, J1, J2, Aex):
+
+        #print("New Fit with J1={j1}, J2={j2}, Aex={aex}".format(j1=J1, j2=J2, aex=Aex))
+        #print("New Fit with J1={j1}, J2={j2}".format(j1=J1*1e3, j2=J2*1e3))
+
+        self.J1 = J1    # mJ/m^2
+        self.J2 = J2    # mJ/m^2
+
+        self.dAexA = 100 * Aex * np.ones(self.NA-1) / self.d    # mJ/m^2
+        self.dAexB = 100 * Aex * np.ones(self.NB-1) / self.d    # mJ/m^2
+
+        m, phiA, phiB, Hs, FOM = self.calculateMH()
+        return m
+    
+
+    def diff_evo_fitMH(self, J1, J2, Aex, bnds):
+        global_fitted_paras = o.differential_evolution(self.fit_cost, bounds=bnds, x0=[J1, J2, Aex], maxiter=5, popsize=5, polish=False, disp=True)
+        print("global fit done")
+        polished_fit_paras = o.minimize(self.fit_cost, global_fitted_paras.x, method='L-BFGS-B', bounds=bnds, options={"ftol": 1e-4})
+        print("local fit done")
+        return list(polished_fit_paras.x)
+
+
+    def fit_cost(self, paras, *args):
+        self.J1, self.J2, Aex = paras
+
+        self.dAexA = 100 * Aex * np.ones(self.NA-1) / self.d
+        self.dAexB = 100 * Aex * np.ones(self.NB-1) / self.d
+        
+        m, phiA, phiB, Hs, FOM = self.calculateMH()
+        #if len(M) == 0: raise Exception # if we pressed the stop button, we raise an Exception to stop fitting
+        #FOM = self.getFOM(sim_M=m)
+        print("FOM = " + str(FOM))
+        return FOM
+    
+
+    def getFOM(self, sim_M):
+        # calculates the Figure of Merit (FOM) of the Simulations / Fits
+        M_dif = [(self.exp_H_steps[i]/max(self.exp_H_steps)) * np.abs(1 - sim_M[i]/self.exp_M[i]) for i in range(len(self.exp_M))]
+        FOM = sum(M_dif)/len(self.exp_M)
+        return FOM
+
+
+    def calculateMH(self, tol=1e-6):
         '''
         This is the function 'energy_M' from E. Wadge
         '''
         ret = np.ones(len(self.h_sweep))
-        phiA0 = np.ones(len(self.h_sweep))
-        phiB0 = np.ones(len(self.h_sweep))
-        # unit conversions to match the continuous model
-        dMsA = 2*self.MsA*self.d*0.1     # mA
-        dMsB = 2*self.MsB*self.d*0.1     # mA
-        dAexA = 100*self.AexA/self.d    # mJ/m^2
-        dAexB = 100*self.AexB/self.d    # mJ/m^2
+        phiA0, phiB0 = [], []
         ini_thetas = np.concatenate((np.arange(1,self.NA+1,1), np.arange(1,self.NB+1,1)))
         for i, H in enumerate(self.h_sweep):
-            thetas_opt = o.minimize(self.energy_asymmetric, ini_thetas, args=(H, dAexA, dAexB, dMsA, dMsB), tol=tol).x
+            thetas_opt = o.minimize(self.energy_asymmetric, ini_thetas, args=(H,), tol=tol).x
 
             for j, theta in enumerate(thetas_opt):
                 thetas_opt[j] = normalizeRadian(theta)
@@ -103,27 +156,31 @@ class WadgeDiscreteEnergyModel():
                 MsB_sum = self.NB*self.MsB
 
             mag = 1/(MsA_sum + MsB_sum) * (np.sum(self.MsA*np.cos(thetas_opt[:self.NA])) + np.sum(self.MsB*np.cos(thetas_opt[self.NA:])))
-            if abs(1-mag) < 0.001:
-                phiA0[i:] = thetas_opt[self.NA-1]
-                phiB0[i:] = thetas_opt[self.NA]
-                break
 
             ret[i] = mag
-            phiA0[i] = np.mean(thetas_opt[:self.NA-1])
-            phiB0[i] = np.mean(thetas_opt[self.NA:])
-            
-        ret *= 1e-3 * (self.dA * self.MsA[0] + self.dB * self.MsB[0])
+            phiA0.append(thetas_opt[:self.NA])
+            phiB0.append(thetas_opt[self.NA:])
+            Hs_i = i
+
+            if abs(1-mag) < 0.0005:
+                break
+        
+        #ret *= (self.dA * self.MsA[0] + self.dB * self.MsB[0])
+        phiA0 = np.asarray(phiA0)
         phiA0 *= 180/np.pi
+        phiB0 = np.asarray(phiB0)
         phiB0 *= 180/np.pi
-        return ret, phiA0, phiB0
+        #FOM = self.getFOM(ret)
+        return ret, phiA0, phiB0, Hs_i
     
 
-    def energy_asymmetric(self, thetas, H, dAexA, dAexB, dMsA, dMsB):
+    def energy_asymmetric(self, thetas, H):
         '''
         This is the function 'energy_asymmetric' from E. Wadge
         '''
         E_RKKY = -self.J1 * np.cos(thetas[self.NA-1] - thetas[self.NA]) - self.J2*np.cos(thetas[self.NA-1] - thetas[self.NA])**2
-        E_ex = -2*(np.sum(dAexA*np.cos(thetas[:self.NA-1] - thetas[1:self.NA])) + np.sum(dAexB*np.cos(thetas[self.NA:-1] - thetas[self.NA+1:])))
-        E_ZCo = -H*np.sum(dMsA*np.cos(thetas[:self.NA])) - H*np.sum(dMsB*np.cos(thetas[self.NA:]))
+        E_ex = -2*(np.sum(self.dAexA*np.cos(thetas[:self.NA-1] - thetas[1:self.NA])) + np.sum(self.dAexB*np.cos(thetas[self.NA:-1] - thetas[self.NA+1:])))
+        E_ZCo = -H*np.sum(self.dMsA*np.cos(thetas[:self.NA])) - H*np.sum(self.dMsB*np.cos(thetas[self.NA:]))
+        #E_UMA = -0.5*self.HaniA*np.sum(self.dMsA*np.cos(thetas[:self.NA] - self.phianiA)**2) - 0.5*self.HaniB*np.sum(self.dMsB*np.cos(thetas[self.NA:] - self.phianiB)**2)
         # print(f"E_RKKY = {E_RKKY}\nE_ex = {E_ex}\nE_Z = {E_ZCo}\ntotal={E_RKKY + E_ex + E_ZCo}")
         return E_RKKY + E_ex + E_ZCo

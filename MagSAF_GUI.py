@@ -11,7 +11,7 @@ import threading
 import numpy as np
 
 from GUI_elements import Parameter, ThicknessMsCalculator
-from MacrospinModel import MacrospinModel, EffectiveMacrospinModel
+from MacrospinModel import MacrospinModel
 
 plt.style.use('dark_background')
 ctk.set_appearance_mode("Dark")
@@ -546,8 +546,9 @@ class GUI(ctk.CTk):
         for phi_k in phi:
             gi, dg = g_calc.get_G(phis=(phi_k, phi), h=1e-3*self.EnergyFieldValue)
             g.append(gi)
+
         x, y = np.meshgrid(np.arange(-180, 180, 3), np.arange(-180, 180, 3))
-        g_min, g_max = np.array(g).min(), np.array(g).max()
+        g_min = np.array(g).min()
         self.g_plot = self.fig_ax.pcolormesh(x, y, g, cmap='RdBu', vmin=g_min, vmax=g_min/1.5)
         divider = make_axes_locatable(self.fig_ax)
         cax = divider.append_axes("right", size="5%", pad=0.3)
@@ -804,7 +805,6 @@ class GUI(ctk.CTk):
             self.sim_H = self.exp_H
         
         MH_sim = MacrospinModel(gui=root, h_sweep=self.sim_H, param_values=self.param_values)
-        #MH_sim = EffectiveMacrospinModel(gui=root, h_sweep=self.sim_H, param_values=self.param_values)
         self.sim_M, self.phiA, self.phiB = MH_sim.calculateMH()   # simulate M(H)
 
         # check if only down field sweep was simulated
