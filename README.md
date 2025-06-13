@@ -19,7 +19,6 @@ In the future, more theoretical models, out-of-plane SAFs as well as more anisot
 4. [Fitting procedure](#fitting-procedure)
    - [Figure of Merit](#figure-of-merit)
    - [Fit Boundaries](#fit-boundaries)
-5. [It's a Bug not a Feature](#its-a-bug-not-a-feature)
 
 ## How to install
 
@@ -109,12 +108,6 @@ $N$ is the amount of data points of the full hysteresis loop, $\sum_j$ sums over
 ### Fit Boundaries
 
 Currently, it is not possible to fit without boundaries. The fit boundaries are the lower and upper values of the slider of the fitted parameter.
-
-# It's a Bug not a Feature
-
-You may see this list as a "I might fix this in the future" or "Be aware of these *features*" list:
-
-- In certain cases, incorrect macrospin rotations can occur if the simulation field steps $\Delta \mu_0 H$ are too large. Be aware of this, when fitting experimental data because experimental field steps are used for simulations and fits if they are available.
 
 # Credits
 
