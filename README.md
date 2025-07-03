@@ -4,7 +4,7 @@ MagSAF is a GUI for fast and easy simulations of magnetic hysteresis loops of sy
 
 In the future, more theoretical models, out-of-plane SAFs as well as more anisotropy options are planned. Any help in this regard is much appreciated.
 
-![Screenshot of the GUI](assets/gui_screenshot.jpg)
+![Screenshot of the GUI](assets/gui_screenshot.JPG)
 
 ## Getting started
 1. [How to install](#how-to-install)
