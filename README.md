@@ -12,7 +12,7 @@ In the future, more theoretical models, out-of-plane SAFs as well as more anisot
    - [Loading experimental data](#loading-experimental-data)
    - [Other plots](#other-plots)
    - [Advanced: Asymmetric SAFs](#advanced-asymmetric-safs)
-   - [Advanced: Fitting multiple hysteresis loops for a better anisotropy fit](#advanced-fitting-multiple-loops-for-better-anisotropy-fit)
+   - [Advanced: Fitting multiple hysteresis loops for a better anisotropy fit](#advanced-fitting-multiple-loops-for-a-better-anisotropy-fit)
 3. [Theoretical Framework](#theoretical-framework)
    - [What is a synthetic antiferromagnet (SAF)?](#what-is-a-synthetic-antiferromagnet-saf)
    - [Coordinate System](#coordinate-system)
