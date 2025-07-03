@@ -99,7 +99,7 @@ class WadgeDiscreteEnergyModel():
         self.dAexA = 100 * Aex * np.ones(self.NA-1) / self.d    # mJ/m^2
         self.dAexB = 100 * Aex * np.ones(self.NB-1) / self.d    # mJ/m^2
 
-        m, phiA, phiB, Hs, FOM = self.calculateMH()
+        m, phiA, phiB, Hs = self.calculateMH()
         return m
     
 
@@ -180,7 +180,7 @@ class WadgeDiscreteEnergyModel():
         '''
         E_RKKY = -self.J1 * np.cos(thetas[self.NA-1] - thetas[self.NA]) - self.J2*np.cos(thetas[self.NA-1] - thetas[self.NA])**2
         E_ex = -2*(np.sum(self.dAexA*np.cos(thetas[:self.NA-1] - thetas[1:self.NA])) + np.sum(self.dAexB*np.cos(thetas[self.NA:-1] - thetas[self.NA+1:])))
-        E_ZCo = -H*np.sum(self.dMsA*np.cos(thetas[:self.NA])) - H*np.sum(self.dMsB*np.cos(thetas[self.NA:]))
-        #E_UMA = -0.5*self.HaniA*np.sum(self.dMsA*np.cos(thetas[:self.NA] - self.phianiA)**2) - 0.5*self.HaniB*np.sum(self.dMsB*np.cos(thetas[self.NA:] - self.phianiB)**2)
+        E_ZCo = -H*np.sum(self.dMsA*np.cos(thetas[:self.NA] - self.phiH)) - H*np.sum(self.dMsB*np.cos(thetas[self.NA:] - self.phiH))
+        E_UMA = -0.5*self.HaniA*np.sum(self.dMsA*np.cos(thetas[:self.NA] - self.phianiA)**2) - 0.5*self.HaniB*np.sum(self.dMsB*np.cos(thetas[self.NA:] - self.phianiB)**2)
         # print(f"E_RKKY = {E_RKKY}\nE_ex = {E_ex}\nE_Z = {E_ZCo}\ntotal={E_RKKY + E_ex + E_ZCo}")
-        return E_RKKY + E_ex + E_ZCo
+        return E_RKKY + E_ex + E_ZCo + E_UMA

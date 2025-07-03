@@ -16,12 +16,14 @@ def normalizeRadian(phi):      # reduce angles to (-pi < phi < pi)
 
 
 class MacrospinModel():
-    def __init__(self, gui, h_sweep, param_values, exp_M=None, fit_paras=None, fit_para_ind=[], fit_type=None, bnds=None, full_hyst="off"):
+    def __init__(self, gui, sim_H, param_values, exp_H=[], fit_paras=None, fit_para_ind=[], fit_type=None, bnds=None, full_hyst="off", use_sim_field="off"):
         self.gui = gui
         if self.gui is not None: self.gui.prog_bar.set(0)
-        self.h_sweep = list(h_sweep)
+        self.sim_H = list(sim_H)
+        self.phiHs = param_values[8]
+        self.phiH = self.phiHs[0]
         self.param_values = param_values
-        self.exp_M = exp_M
+        self.exp_H = exp_H
         self.fit_paras = fit_paras
         self.fit_para_ind = fit_para_ind
         self.fit_type = fit_type
@@ -30,9 +32,10 @@ class MacrospinModel():
         self.fitting = False
         self.bnds = bnds
         self.full_hyst = full_hyst
-        if len(self.h_sweep) > 0: self.half_sweep_ind = self.h_sweep.index(min(self.h_sweep))
+        if len(self.exp_H) > 0: self.exp_half_ind = self.exp_H.index(min(self.exp_H))+1
         self.best_FOM = 100000
         self.linkedParas = False
+        self.use_sim_field = use_sim_field
 
         # if d * Ms as well as Hani and phiani of both FM are identical, the simulation is buggy
         # to circumvent this, we check on class creation if this is the case and adjust one anisotropy angle by 0.01°
@@ -62,10 +65,10 @@ class MacrospinModel():
 
         if self.fit_type == "fast fit":
             maxiter = 5
-            popsize = 3
+            popsize = 5
         elif self.fit_type == "precise fit":
             maxiter = 15
-            popsize = 8
+            popsize = 10
 
         try:
             global_fitted_paras = o.differential_evolution(self.fit_cost, bounds=self.bnds, x0=self.fit_paras, maxiter=maxiter, popsize=popsize, polish=False)
@@ -85,9 +88,34 @@ class MacrospinModel():
         
 
     def fit_cost(self, paras, *args):
-        M, phiA, phiB = self.calculateMH(self.h_sweep, paras)
-        if len(M) == 0: raise Exception # if we pressed the stop button, we raise an Exception to stop fitting
-        FOM = self.gui.getFOM(sim_M=M)
+        if self.use_sim_field == "on":
+            M_tot_plot, M_tot_FOM, phiA, phiB = self.calculateMH(self.sim_H, paras)
+        else:
+            M_tot_plot, phiA, phiB = self.calculateMH(self.sim_H, paras)
+            M_tot_FOM = M_tot_plot
+        if len(M_tot_plot) == 0: raise Exception # if we pressed the stop button, we raise an Exception to stop fitting
+
+        FOM = self.gui.getFOM(sim_M=M_tot_FOM)
+        if FOM < self.best_FOM:
+            self.best_FOM = FOM
+            self.gui.sim_M = M_tot_plot
+            self.gui.sim_M_plot = []
+            for i in range(len(M_tot_plot)):
+                self.gui.sim_M_plot.append([m * 1e3 for m in M_tot_plot[i]])
+            self.gui.drawPlot("Hysteresis", rescale=False)
+
+            fitted_paras = list(paras).copy()
+            self.gui.writeConsole("------------------------------------------------")
+            for i in self.fit_para_ind:
+                if i in (2, 7):
+                    fitted_paras[0] *= (180/np.pi) # phiani from pi values to deg
+                else:   
+                    fitted_paras[0] *= 1e3    # d*Ms from A to mA, Hani from T to mT and J/m^2 to mJ/m^2
+                self.gui.param_list[i].setValue(fitted_paras[0])
+                self.gui.writeConsole(self.gui.param_list[i].param_name + " = " + str(fitted_paras[0]) + " " + self.gui.param_list[i].unit)
+                fitted_paras.pop(0)
+            self.gui.FOM_label.configure(text=str(FOM.round(8)))
+            self.gui.writeConsole("New FOM: " + str(FOM.round(8)))
         return FOM
     
 
@@ -100,7 +128,7 @@ class MacrospinModel():
             self.gui.prog_bar_label.configure(text=txt)
             self.fit_iteration += 1
         elif self.fitting == False:
-            h_sweep = self.h_sweep
+            h_sweep = self.sim_H
             if self.gui is not None: self.gui.prog_bar_label.configure(text="Simulation Progress Bar")
         last_progbar_update = 0
         update_interval = int(len(h_sweep) * 20 / 800)
@@ -114,107 +142,103 @@ class MacrospinModel():
                 fit_paras_copy.pop(0)
             if self.linkedParas == True: self.updateLinkedParas()
 
-        M, phiA, phiB = [], [], []
-        phiH = self.param_values[8]
-        phiA_i, phiB_i = phiH, phiH   # we start from saturation so the first macrospin angles are identical to phiH
+        M_tot_plot, M_tot_FOM, phiA_tot, phiB_tot = [], [], [], []
+        for j in range(len(self.phiHs)):
+            self.phiH = self.phiHs[j]
+            M, M_FOM, phiA, phiB = [], [], [], []
+            phiA_i, phiB_i = self.phiH, self.phiH   # we start from saturation so the first macrospin angles are identical to phiH
 
-        for i, h in enumerate(h_sweep):
-            # check if progress bar should be update
-            if i - last_progbar_update == update_interval and self.gui is not None:
-                if self.gui.stopDaemon_bool == True:
-                    self.gui.stopDaemon_bool = False
-                    self.gui.prog_bar.set(0)
-                    return []
-                if self.full_hyst == "off":
-                    self.gui.prog_bar.set(2*i/len(h_sweep))
-                elif self.full_hyst == "on":
-                    self.gui.prog_bar.set(i/len(h_sweep))
-                last_progbar_update = i
-            elif i == len(h_sweep) - 1 and self.gui is not None:
-                self.gui.prog_bar.set(1)
+            for i, h in enumerate(h_sweep):
+                # check if progress bar should be update
+                if (i+1)*(j+1) == (len(h_sweep)*len(self.phiHs)) and self.gui is not None:
+                    self.gui.prog_bar.set(1)
+                elif i - last_progbar_update == update_interval and self.gui is not None:
+                    if self.gui.stopDaemon_bool == True:
+                        self.gui.stopDaemon_bool = False
+                        self.gui.prog_bar.set(0)
+                        return []
+                    self.gui.prog_bar.set((i+1)/(len(h_sweep)*len(self.phiHs)) + j/len(self.phiHs))
+                    last_progbar_update = i
 
-            # flip phiH by 180° if we go to negative field values
-            phiH_at_h = normalizeRadian(phiH + np.pi) if h < 0 else phiH
+                # flip phiH by 180° if we go to negative field values
+                phiH_at_h = normalizeRadian(self.phiH + np.pi) if h < 0 else self.phiH
 
-            # find local minimum in G(phiA, phiB) for new external field value, using the previous macrospin angles (phiA, phiB) as initial parameters
-            phiAB_new = o.minimize(self.get_G, (phiA_i, phiB_i), args=(h, phiH_at_h), method="newton-cg", jac=True, hess=self.get_G_hess, options={"xtol": 1e-12})
-            
-            # check whether we are stuck on a saddle point / local maxima
-            if math.isclose(phiAB_new.x[0], phiA_i, abs_tol=1e-2) and math.isclose(phiAB_new.x[1], phiB_i, abs_tol=1e-2):   # absolute tolerance is 0.6°
-                inc = np.pi/180     # 1° in radians
-                guesses = [(phiA_i+inc, phiB_i), (phiA_i, phiB_i+inc), (phiA_i-inc, phiB_i), (phiA_i, phiB_i-inc), 
-                           (phiA_i+inc, phiB_i+inc), (phiA_i-inc, phiB_i+inc), (phiA_i-inc, phiB_i-inc), (phiA_i+inc, phiB_i-inc)]
-                g, dg = self.get_G((phiA_i, phiB_i), h, phiH_at_h)
-                d2g, det = self.get_G_hess((phiA_i, phiB_i), h, phiH_at_h, type="det")
-                best_guess = [(phiA_i, phiB_i), dg, d2g, det]
-                while (abs(dg[0]) < 1E-5 and abs(dg[1]) < 1E-5) and det <= 0 or (det > 0 and d2g[0,0] < 0):
-                    # we are either on a maximum or saddle point
-                    for guess in guesses:
-                        g, dg = self.get_G(guess, h, phiH_at_h)
-                        d2g, det = self.get_G_hess(guess, h, phiH_at_h, type="det")
-                        if d2g[0,0] > 0:
-                            best_guess = [guess, dg, d2g, det]
-                            break
-                    inc += np.pi/180
-                    guesses = [(phiA_i+inc, phiB_i), (phiA_i, phiB_i+inc), (phiA_i-inc, phiB_i), (phiA_i, phiB_i-inc),
-                               (phiA_i+inc, phiB_i+inc), (phiA_i-inc, phiB_i+inc), (phiA_i-inc, phiB_i-inc), (phiA_i+inc, phiB_i-inc)]
-                phiAB_new = o.minimize(self.get_G, best_guess[0], args=(h, phiH_at_h), method="newton-cg", jac=True, hess=self.get_G_hess, options={"xtol": 1e-12})
+                # find local minimum in G(phiA, phiB) for new external field value, using the previous macrospin angles (phiA, phiB) as initial parameters
+                phiAB_new = o.minimize(self.get_G, (phiA_i, phiB_i), args=(h, phiH_at_h), method="newton-cg", jac=True, hess=self.get_G_hess, options={"xtol": 1e-12})
+                
+                # check whether we are stuck on a saddle point / local maxima
+                if math.isclose(phiAB_new.x[0], phiA_i, abs_tol=1e-2) and math.isclose(phiAB_new.x[1], phiB_i, abs_tol=1e-2):   # absolute tolerance is 0.6°
+                    inc = np.pi/180     # 1° in radians
+                    guesses = [(phiA_i+inc, phiB_i), (phiA_i, phiB_i+inc), (phiA_i-inc, phiB_i), (phiA_i, phiB_i-inc), 
+                            (phiA_i+inc, phiB_i+inc), (phiA_i-inc, phiB_i+inc), (phiA_i-inc, phiB_i-inc), (phiA_i+inc, phiB_i-inc)]
+                    g, dg = self.get_G((phiA_i, phiB_i), h, phiH_at_h)
+                    d2g, det = self.get_G_hess((phiA_i, phiB_i), h, phiH_at_h, type="det")
+                    best_guess = [(phiA_i, phiB_i), dg, d2g, det]
+                    while (abs(dg[0]) < 1E-5 and abs(dg[1]) < 1E-5) and det <= 0 or (det > 0 and d2g[0,0] < 0):
+                        # we are either on a maximum or saddle point
+                        for guess in guesses:
+                            g, dg = self.get_G(guess, h, phiH_at_h)
+                            d2g, det = self.get_G_hess(guess, h, phiH_at_h, type="det")
+                            if d2g[0,0] > 0:
+                                best_guess = [guess, dg, d2g, det]
+                                break
+                        inc += np.pi/180
+                        guesses = [(phiA_i+inc, phiB_i), (phiA_i, phiB_i+inc), (phiA_i-inc, phiB_i), (phiA_i, phiB_i-inc),
+                                (phiA_i+inc, phiB_i+inc), (phiA_i-inc, phiB_i+inc), (phiA_i-inc, phiB_i-inc), (phiA_i+inc, phiB_i-inc)]
+                    phiAB_new = o.minimize(self.get_G, best_guess[0], args=(h, phiH_at_h), method="newton-cg", jac=True, hess=self.get_G_hess, options={"xtol": 1e-12})
 
-            M_at_H = self.get_MvH(phiAB_new.x, phiH_at_h)
-            M.append(M_at_H)
-            phiA_i = normalizeRadian(phiAB_new.x[0])       # set the current phiA value as the next starting guess for phiA
-            phiB_i = normalizeRadian(phiAB_new.x[1])       # set the current phiB value as the next starting guess for phiB
-            phiA.append(phiA_i)
-            phiB.append(phiB_i)
+                M_at_H = self.get_MvH(phiAB_new.x, phiH_at_h)
+                M.append(M_at_H)
+                phiA_i = normalizeRadian(phiAB_new.x[0])       # set the current phiA value as the next starting guess for phiA
+                phiB_i = normalizeRadian(phiAB_new.x[1])       # set the current phiB value as the next starting guess for phiB
+                phiA.append(phiA_i)
+                phiB.append(phiB_i)
 
-            if self.fitting == True and self.full_hyst == "off" and i == self.half_sweep_ind:
-                # we wanna fit to exp data which should be a full hysteresis but we only simulate the down sweep
-                # so we break after the down sweep is done and mirror & interpolate it to get the theo. up sweep data points
-                H_down_sweep = [-h for h in self.h_sweep[:i+1]]
-                M_down_sweep = [-m for m in M]
-                H_up_sweep = list(self.h_sweep[i+1:])               
-                # First we mirrored the MH down sweep to an up sweep but due to some effects like remanent field correction of 
-                # SQUID-VSMs the H fields at the up and down sweep don't have to be identical. That's why we have to interpolate 
-                # the M values for the up sweep.
-                M = np.append(M, np.interp(H_up_sweep, H_down_sweep, M_down_sweep))
-                break
-        
-        # M(H) simulation is done
+            if self.full_hyst == "off":
+                if self.use_sim_field == "on" and len(self.exp_H) > 0:
+                    # get separate M which is interpolated to fit exp_H values for FOM calculation
+                    M_FOM = np.interp(self.exp_H[:self.exp_half_ind][::-1], self.sim_H[::-1], M[::-1])
+                    M_FOM = M_FOM[::-1]
+                    H_down_inv = [-h for h in self.exp_H[:self.exp_half_ind]]
+                    H_up_sweep = list(self.exp_H[self.exp_half_ind:])
+                    M_FOM_down_inv = [-m for m in M_FOM]
+                    M_FOM = np.append(M_FOM, np.interp(H_up_sweep, H_down_inv, M_FOM_down_inv))
 
-        # convert from radians to deg for plotting purposes
-        phiA = [p * 180 / np.pi for p in phiA]
-        phiB = [p * 180 / np.pi for p in phiB]
+                    # mirror for M to plot
+                    M_up_sweep = [-m for m in M[1:]]
+                    M = list(np.append(M, M_up_sweep))
+                elif self.use_sim_field == "off" and len(self.exp_H) > 0:
+                    H_down_inv = [-h for h in self.exp_H[:self.exp_half_ind]]
+                    M_down_inv = [-m for m in M]
+                    H_up_sweep = list(self.exp_H[self.exp_half_ind:])
+                    M = np.append(M, np.interp(H_up_sweep, H_down_inv, M_down_inv))
+                elif len(self.exp_H) == 0:
+                    M_up_sweep = [-m for m in M[1:]]
+                    M = list(np.append(M, M_up_sweep))
+            elif self.full_hyst == "on" and self.use_sim_field == "on" and len(self.exp_H) > 0:
+                sim_half_ind = self.sim_H.index(min(self.sim_H))
+                M_down = np.interp(self.exp_H[:self.exp_half_ind][::-1], self.sim_H[:sim_half_ind][::-1], M[:sim_half_ind][::-1])
+                M_up = np.interp(self.exp_H[self.exp_half_ind:], self.sim_H[sim_half_ind:], M[sim_half_ind:])
+                M_FOM = np.append(M_down[::-1], M_up)
 
-        # if we are currently fitting, we want to check the FOM of the newly simulated M(H) curve and compare it to the currently best FOM
-        # if the new simulation is a better fit, we want to update the GUI live (update parameters, plot and FOM)
-        if self.fitting == True:
-            FOM = self.gui.getFOM(sim_M=M)
-            if FOM < self.best_FOM:
-                self.best_FOM = FOM
-                self.gui.sim_M = M
-                self.gui.sim_M_plot = M * 1e3
-                self.gui.drawPlot("Hysteresis", rescale=False)
-
-                fitted_paras = list(paras).copy()
-                self.gui.writeConsole("------------------------------------------------")
-                for i in self.fit_para_ind:
-                    if i in (2, 7):
-                        fitted_paras[0] *= (180/np.pi) # phiani from pi values to deg
-                    else:   
-                        fitted_paras[0] *= 1e3    # d*Ms from A to mA, Hani from T to mT and J/m^2 to mJ/m^2
-                    self.gui.param_list[i].setValue(fitted_paras[0])
-                    self.gui.writeConsole(self.gui.param_list[i].param_name + " = " + str(fitted_paras[0]) + " " + self.gui.param_list[i].unit)
-                    fitted_paras.pop(0)
-                FOM = str(FOM.round(8))
-                self.gui.FOM_label.configure(text=FOM)
-                self.gui.writeConsole("New FOM: " + FOM)
-        
-        return M, phiA, phiB
+            # convert from radians to deg for plotting purposes
+            phiA = [p * 180 / np.pi for p in phiA]
+            phiB = [p * 180 / np.pi for p in phiB]
+            M_tot_plot.append(M)
+            if self.use_sim_field == "on" and len(self.exp_H) > 0: 
+                M_tot_FOM.append(M_FOM)
+            phiA_tot.append(phiA)
+            phiB_tot.append(phiB)
+            last_progbar_update = 0
+        if self.use_sim_field == "on" and len(self.exp_H) > 0:
+            return M_tot_plot, M_tot_FOM, phiA_tot, phiB_tot
+        else:
+            return M_tot_plot, phiA_tot, phiB_tot
 
 
     def get_G(self, phis, h, phiH=None):
         if phiH == None:
-            phiH = normalizeRadian(self.param_values[8] + np.pi) if h < 0 else self.param_values[8]
+            phiH = normalizeRadian(self.phiH + np.pi) if h < 0 else self.phiH
         phiA, phiB = phis
         d_Ms_A, hani_A, phiani_A, J1, J2, d_Ms_B, hani_B, phiani_B = self.param_values[:8]
 
@@ -238,7 +262,7 @@ class MacrospinModel():
 
     def get_G_hess(self, phis, h, phiH=None, type=None):
         if phiH == None:
-            phiH = normalizeRadian(self.param_values[8] + np.pi) if h < 0 else self.param_values[8]
+            phiH = normalizeRadian(self.phiH + np.pi) if h < 0 else self.phiH
         phiA, phiB = phis
         d_Ms_A, hani_A, phiani_A, J1, J2, d_Ms_B, hani_B, phiani_B = self.param_values[:8]
 

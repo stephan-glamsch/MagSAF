@@ -29,10 +29,13 @@ small_font_size = 15
 medium_font_size = 17
 large_font_size = 20
 font_name = "Space Grotesk"
-exp_color = "#0087c1"
-sim_color = "#d4002d"
-phiA_color = "#ad007c"
-phiB_color = "#eb690b"
+
+exp_colors = ["#0087c1", "#0eede2", "#00c187"]
+sim_colors = ["#d4002d", "#d45100", "#c1b400"]
+markers = ["o", "s", "D"]
+msize = 4
+phiA_colors = ["#ad007c", "#e80659", "#c90f0f"]
+phiB_colors = ["#eb690b", "#ebd10b", "#8ee111"]
 
 
 def normalizeRadian(phi):      # reduce angles to (-pi < phi < pi)
@@ -177,20 +180,25 @@ class GUI(ctk.CTk):
 
         ctk.CTkLabel(self.sim_fit_opt_frame, text="mT", font=(font_name, medium_font_size)).grid(row=3, column=2, padx=(0, 3*pads), pady=pads, sticky="w")
 
-        # BOUNDARIES CHECKBOX FRAME
+        # SIM/FIT OPTION CHECKBOXES FRAME
         self.full_hyst_check = ctk.CTkCheckBox(self.bnds_frame, text="", width=pads, onvalue="on", offvalue="off")
         self.full_hyst_check.grid(row=0, column=0, padx=(2*pads, 0), pady=pads, sticky="e")
         self.full_hyst_check_txt = ctk.CTkLabel(self.bnds_frame, text="Calculate Full Hysteresis?", font=(font_name, medium_font_size), anchor=tk.CENTER)
         self.full_hyst_check_txt.grid(row=0, column=1, padx=pads, pady=pads, sticky="w")
 
-        self.use_bnds_check = ctk.CTkCheckBox(self.bnds_frame, text="", width=pads, onvalue="on", offvalue="off")
-        self.use_bnds_check.grid(row=1, column=0, padx=(2*pads, 0), pady=pads, sticky="e")
-        self.use_bnds_check.select()
-        self.use_bnds_check.configure(state="disabled") # TODO: allow disabling of boundaries in the future (need to adjust fit function accordingly)
-        self.use_bnds_check_txt = ctk.CTkLabel(self.bnds_frame, text="Use Boundaries for Fit?", font=(font_name, medium_font_size), anchor=tk.CENTER)
-        self.use_bnds_check_txt.grid(row=1, column=1, padx=pads, pady=pads, sticky="w")
-        self.use_bnds_check.grid_remove()
-        self.use_bnds_check_txt.grid_remove()
+        #self.use_bnds_check = ctk.CTkCheckBox(self.bnds_frame, text="", width=pads, onvalue="on", offvalue="off")
+        #self.use_bnds_check.grid(row=1, column=0, padx=(2*pads, 0), pady=pads, sticky="e")
+        #self.use_bnds_check.select()
+        #self.use_bnds_check.configure(state="disabled") # TODO: allow disabling of boundaries in the future (need to adjust fit function accordingly)
+        #self.use_bnds_check_txt = ctk.CTkLabel(self.bnds_frame, text="Use Boundaries for Fit?", font=(font_name, medium_font_size), anchor=tk.CENTER)
+        #self.use_bnds_check_txt.grid(row=1, column=1, padx=pads, pady=pads, sticky="w")
+        #self.use_bnds_check.grid_remove()
+        #self.use_bnds_check_txt.grid_remove()
+
+        self.use_sim_field = ctk.CTkCheckBox(self.bnds_frame, text="", width=pads, onvalue="on", offvalue="off")
+        self.use_sim_field.grid(row=1, column=0, padx=(2*pads, 0), pady=pads, sticky="e")
+        self.use_sim_field_txt = ctk.CTkLabel(self.bnds_frame, text="Use Sim Fields, not Exp Fields", font=(font_name, medium_font_size), anchor=tk.CENTER)
+        self.use_sim_field_txt.grid(row=1, column=1, padx=pads, pady=pads, sticky="w")
 
         self.fit_focus_txt = ctk.CTkLabel(self.fit_focus_frame, text="Focus Fit on region", font=(font_name, medium_font_size))
         self.fit_focus_txt.grid(row=0, column=0, padx=(2*pads, 0), pady=pads, sticky="w")
@@ -198,6 +206,8 @@ class GUI(ctk.CTk):
         self.fit_focus.grid(row=0, column=1, padx=(0, pads), pady=pads, sticky="w")
         self.fit_focus.set("none")
         self.fit_focus_frame.grid_remove()
+
+        
 
         # FIT PROCEDURE
         ctk.CTkLabel(self.procedure_frame, text="Simulation / Fit Procedure", font=(font_name, large_font_size), anchor=tk.CENTER).grid(row=0, column=0, columnspan=3, padx=pads, pady=pads, sticky="n")
@@ -219,7 +229,7 @@ class GUI(ctk.CTk):
 
         # Load exp. data
         ctk.CTkLabel(self.procedure_frame, text="2. Load exp. M(H) data", font=(font_name, medium_font_size), anchor=tk.CENTER).grid(row=3, column=0, padx=(2*pads,pads), pady=pads, sticky="nw")
-        self.load_data_button = ctk.CTkButton(self.procedure_frame, text="Load exp. Data", font=(font_name, small_font_size), command=self.loadData)
+        self.load_data_button = ctk.CTkButton(self.procedure_frame, text="Add exp. Data", font=(font_name, small_font_size), command=self.loadData)
         self.load_data_button.grid(row=3, column=1, padx=pads, pady=pads, sticky="n")
         self.remove_data_button = ctk.CTkButton(self.procedure_frame, text="Remove exp. Data", font=(font_name, small_font_size), command=self.removeData)
         self.remove_data_button.grid(row=3, column=2, padx=(pads, 2*pads), pady=pads, sticky="n")
@@ -279,6 +289,7 @@ class GUI(ctk.CTk):
         self.cover_frame = ctk.CTkFrame(self.plot_options_frame, height=0)
         self.cover_frame.grid(row=1, column=0, columnspan=7, padx=pads, pady=(pads, 0), sticky="nsew")
 
+        self.loaded_filenames = []
         self.loaded_file_label = ctk.CTkLabel(self.plot_options_frame, text="Loaded data file:", font=(font_name, medium_font_size))
         self.loaded_file_label.grid(row=2, column=0, columnspan=7, padx=(2*pads, pads), pady=(pads, 0), sticky="w")
 
@@ -320,7 +331,7 @@ class GUI(ctk.CTk):
         self.param_values = [0] * len(self.param_list)
         self.param_l_bnds = [param.getLowerBound() for param in self.param_list if type(param) == Parameter]
         self.param_u_bnds = [param.getUpperBound() for param in self.param_list if type(param) == Parameter]
-        self.exp_H, self.sim_H = [], []
+        self.exp_M, self.exp_M_plot, self.exp_H, self.sim_H, self.sim_M = [], [], [], [], []
         self.phiA, self.phiB = [], []
         self.cur_plot = "M(H)"
         self.stopDaemon_bool = False
@@ -351,8 +362,6 @@ class GUI(ctk.CTk):
             self.sim_H_max.grid_remove()
             self.C_FM_H_label.grid()
             self.C_FM_H.grid()
-            self.use_bnds_check.grid()
-            self.use_bnds_check_txt.grid()
             self.fit_focus_frame.grid()
         elif value == "Sim Options":
             self.sim_dH_label.grid()
@@ -363,8 +372,6 @@ class GUI(ctk.CTk):
             self.sim_H_max.grid()
             self.C_FM_H_label.grid_remove()
             self.C_FM_H.grid_remove()
-            self.use_bnds_check.grid_remove()
-            self.use_bnds_check_txt.grid_remove()
             self.fit_focus_frame.grid_remove()
 
 
@@ -399,21 +406,27 @@ class GUI(ctk.CTk):
             self.cover_frame.grid()
             self.drawMHplots(rescale)
         elif plot_type == "Macrospin Rotation":
+            if len(self.phiA) == 0:
+                self.writeConsole("You first need to simulate / fit something before you can change plots.")
+                return
             self.plot_seg_but.set("Macrospin Rotation")
             self.cover_frame.grid()
             self.drawMacrospinRotPlot()
         elif plot_type == "Energy Landscape":
+            if len(self.sim_M) == 0:
+                self.writeConsole("You first need to simulate / fit something before you can change plots.")
+                return
             self.plot_seg_but.set("Energy Landscape")
             self.cover_frame.grid_remove()
             self.drawEnergyPlot()
 
 
     def drawMHplots(self, rescale=True):
+        self.cur_plot = "M(H)"
         cur_xlim = self.fig_ax.get_xlim()
         cur_ylim = self.fig_ax.get_ylim()
         if cur_xlim == cur_ylim == (0, 1):
             rescale = True
-        self.cur_plot = "M(H)"
         self.fig_ax.clear()
         self.axhline = self.fig_ax.axhline(0, color="#D3D3D3", linestyle="--", linewidth=1)
         self.axvline = self.fig_ax.axvline(0, color="#D3D3D3", linestyle="--", linewidth=1)
@@ -433,22 +446,32 @@ class GUI(ctk.CTk):
             x_max = max(self.sim_H) * 1.1
             xlim = (-x_max, x_max) if rescale == True else cur_xlim
             self.fig_ax.set_xlim(xlim)
+        self.fig_ax.set_ylim(cur_ylim)
 
-        # exp. data
-        try:
-            self.exp_plot = self.fig_ax.plot(self.exp_H, self.exp_M_plot, color=exp_color, marker="o", markersize=4, label="exp")
-            ylim = (1.1 * min(self.exp_M_plot), 1.1 * max(self.exp_M_plot)) if rescale == True else cur_ylim
-            self.fig_ax.set_ylim(ylim)
-        except:
-            pass
+        # plot M(H)
+        self.exp_plots, self.sim_plots, ylim = [], [], []
+        sim_len = len(self.sim_M)
+        exp_len = len(self.exp_M)
+        if len(self.param_values[8]) < sim_len:
+            label_txt = "sim ??°"
+            self.writeConsole("The simulated plots could not be labeled correctly because the amount of values for phiH is different from the amount of simulated M(H) loops.")
+        for i in range(max(sim_len, exp_len)):
+            if i < exp_len:
+                exp_plot = self.fig_ax.plot(self.exp_H, self.exp_M_plot[i], color=exp_colors[i], marker=markers[i], markersize=msize, label="exp #" + str(i+1))
+                self.exp_plots.append(exp_plot)
+                ylim.append( 1.1 * max(self.exp_M_plot[i])) if rescale == True else cur_ylim
+            if i < sim_len:
+                if len(self.param_values[8]) == sim_len:
+                    label_txt = "sim " + str(round(self.param_values[8][i]*180/np.pi, 1)) + "°"
+                sim_plot = self.fig_ax.plot(self.sim_H_plot, self.sim_M_plot[i], color=sim_colors[i], marker=markers[i], markersize=msize, label=label_txt)
+                self.sim_plots.append(sim_plot)
+                ylim.append(1.1 * max(self.sim_M_plot[i])) if rescale == True else cur_ylim
 
-        # simulation with analytical model
-        try:
-            self.sim_plot = self.fig_ax.plot(self.sim_H, self.sim_M_plot, color=sim_color, marker="o", markersize=4, label="sim")
-            ylim = (1.1 * min(self.sim_M_plot), 1.1 * max(self.sim_M_plot)) if rescale == True else cur_ylim
-            self.fig_ax.set_ylim(ylim)
-        except:
-            pass
+        if (sim_len, exp_len) == (0, 0):
+            self.fig_ax.set_xlim((0, 1))
+            self.fig_ax.set_ylim((0, 1))
+        elif rescale == True and len(ylim) > 0:
+            self.fig_ax.set_ylim((-max(ylim), max(ylim)))
         
         legend = self.fig_ax.legend()
         if len(legend.legend_handles) == 0:
@@ -457,6 +480,7 @@ class GUI(ctk.CTk):
 
     
     def drawMacrospinRotPlot(self):
+        self.cur_plot = "macrospins"
         self.fig_ax.clear()
         try:
             self.g_colorbar.ax.clear()
@@ -465,7 +489,6 @@ class GUI(ctk.CTk):
             pass
         self.axhline = self.fig_ax.axhline(0, color="#D3D3D3", linestyle="--", linewidth=1)
         self.axvline = self.fig_ax.axvline(0, color="#D3D3D3", linestyle="--", linewidth=1)
-        self.cur_plot = "macrospins"
 
         self.fig_ax.set_title("Macrospin Angles", fontsize=16*GUI_scale)
         self.fig_ax.set_ylabel("phi (°)", fontsize=15*GUI_scale)
@@ -479,17 +502,17 @@ class GUI(ctk.CTk):
             self.fig_ax.set_xlim(-x_max, x_max)
 
         # if only down sweep was calculated, lets just display down sweep
-        try:
-            if len(self.sim_H) != len(self.phiA) and len(self.sim_H) != len(self.phiB):
-                sim_H_plot = self.sim_H[:len(self.phiA)]
-            else:
-                sim_H_plot = self.sim_H
-        except:
-            pass
-
-        if len(self.phiA) > 0:
-            self.phiA_plot = self.fig_ax.plot(sim_H_plot, self.phiA, color=phiA_color, marker="o", markersize=5, label="Top FM")
-            self.phiB_plot = self.fig_ax.plot(sim_H_plot, self.phiB, color=phiB_color, marker="x", markersize=5, label="Bottom FM")
+        if len(self.sim_H) != len(self.phiA[0]) and len(self.sim_H) != len(self.phiB[0]):
+            sim_H_plot = self.sim_H[:len(self.phiA[0])]
+        else:
+            sim_H_plot = self.sim_H
+        
+        self.phiA_plots, self.phiB_plots = [], []
+        for i in range(len(self.phiA)):
+            phiA_plot = self.fig_ax.plot(sim_H_plot, self.phiA[i], color=phiA_colors[i], marker=markers[i], markersize=msize, label="Top " + str(round(self.param_values[8][i]*180/np.pi, 1)) + "°")
+            self.phiA_plots.append(phiA_plot)
+            phiB_plot = self.fig_ax.plot(sim_H_plot, self.phiB[i], color=phiB_colors[i], marker=markers[i], markersize=msize, label="Bottom " + str(round(self.param_values[8][i]*180/np.pi, 1)) + "°")
+            self.phiB_plots.append(phiB_plot)
         
         legend = self.fig_ax.legend()
         if len(legend.legend_handles) == 0:
@@ -498,9 +521,10 @@ class GUI(ctk.CTk):
 
 
     def drawEnergyPlot(self):
+        self.cur_plot = "energy"
         self.updateParamValues()
-        if len(self.phiA) > 0:
-            steps = len(self.phiA)
+        if len(self.phiA[0]) > 0:
+            steps = len(self.phiA[0])
         else:
             steps = 100
         self.EnergyFieldSlider.configure(number_of_steps=steps-1, from_=steps-1)
@@ -537,10 +561,10 @@ class GUI(ctk.CTk):
         self.EnergyFieldEntry.delete(0, "end")
         self.EnergyFieldEntry.insert(0, str(self.EnergyFieldValue))
         self.EnergyFieldEntry.configure(state="disabled")
-        title = "Energy Landscape at " + str(self.EnergyFieldValue) + " mT"
+        title = "Energy Landscape for phiH=" + str(round(self.param_values[8][0]*180/np.pi, 1)) + "° at " + str(self.EnergyFieldValue) + " mT"
         self.fig_ax.set_title(title, fontsize=16*GUI_scale)
         
-        g_calc = MacrospinModel(gui=root, h_sweep=[], param_values=self.param_values)
+        g_calc = MacrospinModel(gui=root, sim_H=[], param_values=self.param_values)
         g = []
         phi = np.linspace(-np.pi, np.pi, num=120)
         for phi_k in phi:
@@ -554,7 +578,7 @@ class GUI(ctk.CTk):
         cax = divider.append_axes("right", size="5%", pad=0.3)
         self.g_colorbar = plt.colorbar(self.g_plot, cax=cax)
         self.g_colorbar.ax.set_ylabel("normed energy", rotation=270, labelpad=2*pads, size=0.8*small_font_size)
-        self.g_plot_marker = self.fig_ax.plot(self.phiB[i], self.phiA[i], "o")
+        self.g_plot_marker = self.fig_ax.plot(self.phiB[0][i], self.phiA[0][i], "o")
 
         legend = self.fig_ax.legend()
         if len(legend.legend_handles) == 0:
@@ -575,15 +599,20 @@ class GUI(ctk.CTk):
 
 
     def loadData(self):
+        self.updateParamValues()
+        if len(self.exp_M) == 3:
+            self.writeConsole("You have already loaded the maximum number of experimental M(H) loops to fit in parallel.")
+            return
         try:
             self.d_tot_nom_val = float(self.d_tot_nom.get()) * 1e-9 # total FM thickness in m
         except:
             self.writeConsole("You can't load experimental data until you entered the total thickness of the sample in Step 1. in Simulation/Fit Procedure.")
             return
+
         exp_data_filename = tk.filedialog.askopenfilename(parent=self, initialdir=os.getcwd())
         if exp_data_filename == "": return
         try:
-            self.exp_H, self.exp_M = np.loadtxt(exp_data_filename, dtype=np.float64, usecols=(0,1), unpack=True, skiprows=2)
+            exp_H, exp_M = np.loadtxt(exp_data_filename, dtype=np.float64, usecols=(0,1), unpack=True, skiprows=2)
             with open(exp_data_filename, "r") as f:
                 lines = f.readlines()
                 if " " not in lines[1]:
@@ -593,83 +622,103 @@ class GUI(ctk.CTk):
                     units = [unit.replace("\n", "") for unit in units]
 
             units = [x for x in units if x != ""]   # remove all "" entries from units
-            self.exp_H_unit = units[0]
-            self.exp_M_unit = units[1]
+            exp_H_unit = units[0]
+            exp_M_unit = units[1]
 
             # want exp_H in T
-            if "Oe" in self.exp_H_unit:
-                self.exp_H = [x/1e4 for x in self.exp_H]
-            elif "mT" in self.exp_H_unit:
-                self.exp_H = [x/1e3 for x in self.exp_H]
-            elif "T" not in self.exp_H_unit:
+            if "Oe" in exp_H_unit:
+                exp_H = [x/1e4 for x in exp_H]
+            elif "mT" in exp_H_unit:
+                exp_H = [x/1e3 for x in exp_H]
+            elif "T" not in exp_H_unit:
                 self.writeConsole("Magnetic field values H of loaded data are neither in units of Oe, mT nor T. Loading data aborted.")
-                self.exp_H, self.exp_M = [], []
                 return
             
             # want exp_M in A unit (d*M)
-            if "kA/m" in self.exp_M_unit:
-                self.exp_M = [1e3 * m * self.d_tot_nom_val for m in self.exp_M]
-                self.exp_M_unit = "A"
-            elif "A/m" in self.exp_M_unit:
-                self.exp_M = [m * self.d_tot_nom_val for m in self.exp_M]
-                self.exp_M_unit = "A"
+            if "kA/m" in exp_M_unit:
+                exp_M = [1e3 * m * self.d_tot_nom_val for m in exp_M]
+                exp_M_unit = "A"
+            elif "A/m" in exp_M_unit:
+                exp_M = [m * self.d_tot_nom_val for m in exp_M]
+                exp_M_unit = "A"
             else:
                 self.writeConsole("Magnetization values M of loaded data are neither in units of kA/m nor A/m. Loading data aborted.")
-                self.exp_H, self.exp_M = [], []
                 return
-            self.exp_M_plot = [1e3 * m for m in self.exp_M] # plot d*M in mA units
+            exp_M_plot = [1e3 * m for m in exp_M] # plot d*M in mA units
 
             # I want a list of the H step density for FOM weighting later on
-            self.exp_H_steps = []
-            for i in range(len(self.exp_H)):
+            exp_H_steps = []
+            for i in range(len(exp_H)):
                 if i == 0:
-                    dH = 2 * np.abs(self.exp_H[i] - self.exp_H[i+1])
-                elif i == len(self.exp_H)-1:
-                    dH = 2 * np.abs(self.exp_H[i-1] - self.exp_H[i])
+                    dH = 2 * np.abs(exp_H[i] - exp_H[i+1])
+                elif i == len(exp_H)-1:
+                    dH = 2 * np.abs(exp_H[i-1] - exp_H[i])
                 else:
-                    dH = np.abs(self.exp_H[i-1] - self.exp_H[i]) + np.abs(self.exp_H[i] - self.exp_H[i+1])
-                self.exp_H_steps.append(dH)
-
-            self.drawPlot("Hysteresis")
-            filename = exp_data_filename.split("/")
-            filename = filename[-1]
-            self.loaded_file_label.configure(text="Loaded data file: " + filename)
+                    dH = np.abs(exp_H[i-1] - exp_H[i]) + np.abs(exp_H[i] - exp_H[i+1])
+                exp_H_steps.append(dH)
         except Exception as err:
             self.writeConsole("Error: Exp. data could not be loaded. Make sure you chose the correct file and it is structured correctly (see documentation).")      
+        else:
+            self.exp_H = exp_H
+            self.exp_H_steps = exp_H_steps
+            self.exp_M.append(exp_M)
+            self.exp_M_plot.append(exp_M_plot)
+            filename = exp_data_filename.split("/")
+            filename = filename[-1]
+            self.loaded_filenames.append(filename)
+            txt = "Loaded data files: "
+            for i in range(len(self.loaded_filenames)):
+                txt += "exp #" + str(i+1) + ": " + str(self.loaded_filenames[i]) + ", "
+            txt = txt[:-2]
+            self.loaded_file_label.configure(text=txt)
+            self.drawPlot("Hysteresis", rescale=True)
 
 
     def removeData(self):
         self.exp_H = []
         self.exp_M = []
+        self.exp_M_plot = []
+        self.exp_H_steps = []
+        self.loaded_filenames = []
         self.loaded_file_label.configure(text="Loaded data file: ")
         try:
-            self.exp_plot.pop(0).remove()
-            self.fig_ax.legend().remove()
-            self.fig.canvas.draw()
+            for plot in self.exp_plots:
+                plot.pop(0).remove()
+            self.drawPlot("Hysteresis", rescale=False)
         except:
             pass
 
 
     def removeSim(self):
         self.EnergyFieldSlider.set(0)
-        self.sim_H, self.sim_M, self.phiA, self.phiB = [], [], [], []
-        self.drawPlot(self.plot_seg_but.get())
+        self.sim_H, self.sim_M, self.sim_M_plot, self.phiA, self.phiB = [], [], [], [], []
+        self.drawPlot("Hysteresis", rescale=False)
 
             
-    def getSim_H_sweep(self):
-        try:
-            max_H = float(self.sim_H_max.get()) / 1e3
-            H_steps = float(self.sim_dH.get()) / 1e3
-            nmr_of_steps = int(2*max_H/H_steps)
-            if self.full_hyst_check.get() == "off":
-                sim_H_sweep = np.linspace(max_H, -max_H, nmr_of_steps)
-            elif self.full_hyst_check.get() == "on":
-                sim_H_down_sweep = np.linspace(max_H, -max_H, nmr_of_steps)
-                sim_H_up_sweep = np.linspace(-max_H, max_H, nmr_of_steps)
-                sim_H_sweep = np.append(sim_H_down_sweep, sim_H_up_sweep)
-            return sim_H_sweep
-        except:
-            pass
+    def updateSimH(self):
+        if len(self.exp_H) == 0 or self.use_sim_field.get() == "on":
+            try:
+                max_H = float(self.sim_H_max.get()) / 1e3
+                H_steps = float(self.sim_dH.get()) / 1e3
+                nmr_of_steps = int(2*max_H/H_steps)
+                if self.full_hyst_check.get() == "off":
+                    self.sim_H = list(np.linspace(max_H, -max_H, nmr_of_steps))
+                    self.sim_H_plot = list(np.append(self.sim_H, self.sim_H[::-1][1:]))
+                elif self.full_hyst_check.get() == "on":
+                    sim_H_down_sweep = np.linspace(max_H, -max_H, nmr_of_steps)
+                    self.sim_H = list(np.append(sim_H_down_sweep, sim_H_down_sweep[::-1][1:]))
+                    self.sim_H_plot = list(self.sim_H)
+            except Exception as err:
+                self.writeConsole("Error within 'updateSimH': " + str(err))
+                pass
+        elif len(self.exp_H) > 0 and self.full_hyst_check.get() == "off":
+            i = np.where(self.exp_H == min(self.exp_H)) if isinstance(self.exp_H, np.ndarray) else self.exp_H.index(min(self.exp_H))
+            self.sim_H = self.exp_H[:i+1] if isinstance(i, int) else self.exp_H[:min(i[0])+1]
+            up_sweep = self.exp_H[i+1:] if isinstance(i, int) else self.exp_H[min(i[0])+1:]
+            self.sim_H_plot = list(np.append(np.asarray(self.sim_H), np.asarray(up_sweep)))
+        else:
+            self.sim_H = self.exp_H
+            self.sim_H_plot = self.exp_H
 
 
     def updateParamValues(self):
@@ -712,21 +761,30 @@ class GUI(ctk.CTk):
                     self.param_l_bnds[i] *= (np.pi/180)
                     self.param_u_bnds[i] *= (np.pi/180)
             else:
-                self.param_values[i] = float(param.get())
                 if i == 8:
-                    self.param_values[i] *= (np.pi/180) # phiH from deg to rad
+                    phiHs = param.get().split(",")
+                    try:
+                        # phiH from deg to rad & allow for multiple phiHs for parallel fitting
+                        phiHs = [round((np.pi/180) * float(phiH.replace(" ", "")), 4) for phiH in phiHs]
+                    except:
+                        phiHs = None
+                    self.param_values[i] = phiHs
                 elif i in (9, 10):
-                    self.param_values[i] *= 1e-3    # sim µ0H and dµ0H from mT to T
+                    self.param_values[i] = float(param.get()) * 1e-3    # sim µ0H and dµ0H from mT to T
              
 
-    def updateFOM(self):
+    def updateFOM(self, sim_M_FOM=[]):
         if len(self.exp_H) == 0:
             self.FOM_label.configure(text="-------")
             return
+        if len(sim_M_FOM) > 0:
+            sim_M = sim_M_FOM
+        elif len(sim_M_FOM) == 0:
+            sim_M = self.sim_M
         
         # updates FOM in the GUI
         try:
-            FOM = self.getFOM(self.sim_M)
+            FOM = self.getFOM(sim_M)
             FOM = str(FOM.round(8))
             self.FOM_label.configure(text=FOM)
         except Exception as err:
@@ -735,6 +793,10 @@ class GUI(ctk.CTk):
 
 
     def getFOM(self, sim_M):
+        if len(sim_M) != len(self.exp_M):
+            self.writeConsole("Error: The amount of loaded data files is unequal to the amount of values for phiH. Please separate any additional phiH values by a comma. For help, please read the documentation at https://github.com/stephan-glamsch/MagSAF.")
+            self.FOM_label.configure(text="-------")
+            return
         # calculates the Figure of Merit (FOM) of the Simulations / Fits
         try:
             # try/except to check if H1 and H2 is given
@@ -753,20 +815,28 @@ class GUI(ctk.CTk):
                     AFM.append(i)
             
             max_H_steps = max(self.exp_H_steps)
-            FM_M_dif = [np.abs((self.exp_H_steps[i]/max_H_steps) * (1 - sim_M[i]/self.exp_M[i])) for i in FM]
-            C_M_dif = [np.abs((self.exp_H_steps[i]/max_H_steps) * (1 - sim_M[i]/self.exp_M[i])) for i in C]
-            AFM_M_dif = [np.abs((self.exp_H_steps[i]/max_H_steps) * (1 - sim_M[i]/self.exp_M[i])) for i in AFM]
+            FM_M_dif, C_M_dif, AFM_M_dif = [], [], []
+            for j in range(len(self.exp_M)):
+                FM_M_dif.append([np.abs((self.exp_H_steps[i]/max_H_steps) * (1 - sim_M[j][i]/self.exp_M[j][i])) for i in FM])
+                C_M_dif.append([np.abs((self.exp_H_steps[i]/max_H_steps) * (1 - sim_M[j][i]/self.exp_M[j][i])) for i in C])
+                AFM_M_dif.append([np.abs((self.exp_H_steps[i]/max_H_steps) * (1 - sim_M[j][i]/self.exp_M[j][i])) for i in AFM])
+
+            # flatten lists
+            FM_M_dif = [x for xs in FM_M_dif for x in xs]
+            C_M_dif = [x for xs in C_M_dif for x in xs]
+            AFM_M_dif = [x for xs in AFM_M_dif for x in xs]
 
             # if we want to focus on a region, we just put some weight on their FOM
             if self.fit_focus.get() == "FM": FM_M_dif *= 3
             if self.fit_focus.get() == "C": C_M_dif *= 3
             if self.fit_focus.get() == "AFM": AFM_M_dif *= 3
 
-            FOM = (sum(FM_M_dif) + sum(C_M_dif) + sum(AFM_M_dif))/len(self.exp_H)
+            FOM = (sum(FM_M_dif) + sum(C_M_dif) + sum(AFM_M_dif))/(len(self.exp_H) * len(self.exp_M))
         except:
-            M_dif = [(self.exp_H_steps[i]/max(self.exp_H_steps)) * np.abs(1 - sim_M[i]/self.exp_M[i]) for i in range(len(self.exp_M))]
-            FOM = sum(M_dif)/len(self.exp_M)
-                
+            FOM = 0
+            for j in range(len(self.exp_M)):
+                M_dif = [(self.exp_H_steps[i]/max(self.exp_H_steps)) * np.abs(1 - sim_M[j][i]/self.exp_M[j][i]) for i in range(len(self.exp_M[j]))]
+                FOM += sum(M_dif)/len(self.exp_H)
         return FOM
 
 
@@ -778,7 +848,6 @@ class GUI(ctk.CTk):
         self.FM1_dMs_calc.enableButton()
         self.FM2_dMs_calc.enableButton()
         
-
 
     def newThreadMHsim(self):
         self.stopDaemon_bool = False
@@ -795,32 +864,20 @@ class GUI(ctk.CTk):
             # If both J1 and J2 are zero the simulation doesnt work
             return
         
-        # get correct field sweep to simulate
-        if len(self.exp_H) == 0:
-            self.sim_H = self.getSim_H_sweep()
-        elif self.full_hyst_check.get() == "off":
-            i = np.where(self.exp_H == min(self.exp_H)) if isinstance(self.exp_H, np.ndarray) else self.exp_H.index(min(self.exp_H))
-            self.sim_H = self.exp_H[:i+1] if isinstance(i, int) else self.exp_H[:min(i[0])+1]
+        self.updateSimH()
+        MH_sim = MacrospinModel(gui=root, sim_H=self.sim_H, exp_H=self.exp_H, param_values=self.param_values, 
+                                use_sim_field=self.use_sim_field.get(), full_hyst=self.full_hyst_check.get())
+        if self.use_sim_field.get() == "on" and len(self.exp_H) > 0:
+            self.sim_M, sim_M_FOM, self.phiA, self.phiB = MH_sim.calculateMH()   # simulate M(H)
+            self.updateFOM(sim_M_FOM)
         else:
-            self.sim_H = self.exp_H
-        
-        MH_sim = MacrospinModel(gui=root, h_sweep=self.sim_H, param_values=self.param_values)
-        self.sim_M, self.phiA, self.phiB = MH_sim.calculateMH()   # simulate M(H)
+            self.sim_M, self.phiA, self.phiB = MH_sim.calculateMH()   # simulate M(H)
+            self.updateFOM()            
 
-        # check if only down field sweep was simulated
-        # if so, get up field sweep by mirroring down sweep (this is only gives the correct hysteresis if it is symmetric)
-        if self.full_hyst_check.get() == "off":
-            H_up_sweep = [-h for h in self.sim_H]
-            self.sim_H = np.append(self.sim_H, H_up_sweep)
-            M_up_sweep = [-m for m in self.sim_M]
-            self.sim_M = np.append(self.sim_M, M_up_sweep)
-
-        # i dont even know what this if clause is for
-        if len(self.sim_M) > 0:
-            self.sim_M_plot = [1e3 * m for m in self.sim_M] # plot d*M in mA units
-            self.updateFOM()
-            self.drawPlot("Hysteresis", rescale=False)
-
+        self.sim_M_plot = []
+        for i in range(len(self.sim_M)):
+            self.sim_M_plot.append([1e3 * m for m in self.sim_M[i]]) # plot d*M in mA units
+        self.drawPlot("Hysteresis", rescale=False)
         for button in self.disable_buttons:
             button.configure(state="normal")
         self.FM1_dMs_calc.enableButton()
@@ -849,10 +906,6 @@ class GUI(ctk.CTk):
                 self.param_values[i] = None     # remove parameters which should be fitted from self.param_values
                 fit_para_ind.append(i)
                 bnds.append([self.param_l_bnds[i], self.param_u_bnds[i]])
-        if self.use_bnds_check.get() == "on":
-            bnds = bnds
-        else:
-            bnds = None
 
         if None not in self.param_values:   
             # if no fit parameter is checked on to be fitted, there is nothing to fit
@@ -864,9 +917,10 @@ class GUI(ctk.CTk):
         self.FM1_dMs_calc.disableButton()
         self.FM2_dMs_calc.disableButton()
 
-        self.sim_H = self.exp_H.copy()     # needed for plotting purposes
-        MH_fit = MacrospinModel(gui=root, h_sweep=self.exp_H, param_values=self.param_values, exp_M=self.exp_M, fit_paras=fit_paras,
-                                fit_para_ind=fit_para_ind, fit_type=self.fit_prec.get(), bnds=bnds, full_hyst=self.full_hyst_check.get())
+        self.updateSimH()
+        MH_fit = MacrospinModel(gui=root, sim_H=self.sim_H, param_values=self.param_values, exp_H=self.exp_H, fit_paras=fit_paras, 
+                                fit_para_ind=fit_para_ind, fit_type=self.fit_prec.get(), bnds=bnds, full_hyst=self.full_hyst_check.get(),
+                                use_sim_field=self.use_sim_field.get())
         
         # if both d*Ms parameters are linked to each other AND we want to fit one of them, we need to update the other one accordingly during the fitting process
         # please ignore the ugly hard coding :)
@@ -898,32 +952,65 @@ class GUI(ctk.CTk):
     def exportPlotData(self):
         self.updateParamValues()
         try:
-            if self.cur_plot == "M(H)" and self.d_tot_nom_val != 0:
-                sim_M = 1e-3 * np.asarray(self.sim_M, dtype=np.float64) / self.d_tot_nom_val # sim_M in kA/m
-                sim_data = list(np.stack((self.sim_H, sim_M)).T)
-                save_data = "H\tM\n[T]\t[kA/m]\n"
-                for i in range(len(sim_data)):
-                    save_data += str(sim_data[i][0]) + "\t" + str(sim_data[i][1]) + "\n"
-            elif self.cur_plot == "M(H)" and self.d_tot_nom_val == 0:
-                sim_M = 1e3 * np.asarray(self.sim_M, dtype=np.float64) # sim_M in mA
-                sim_data = list(np.stack((self.sim_H, sim_M)).T)
-                save_data = "H\td*M\n[T]\t[mA]\n"
-                for i in range(len(sim_data)):
-                    save_data += str(sim_data[i][0]) + "\t" + str(sim_data[i][1]) + "\n"
-            elif self.cur_plot == "macrospins":
+            if self.cur_plot == "M(H)" and len(self.sim_M) != 0:
+                sim_M_tot = [self.sim_H_plot]
+                if self.d_tot_nom_val != 0:
+                    sim_M_unit = "kA/m"
+                    for i in range(len(self.sim_M)):
+                        sim_M = 1e-3 * np.asarray(self.sim_M[i], dtype=np.float64) / self.d_tot_nom_val # sim_M in kA/m
+                        sim_M_tot.append(sim_M)
+                elif self.d_tot_nom_val == 0:
+                    sim_M_unit = "mA"
+                    for i in range(len(self.sim_M)):
+                        sim_M = 1e3 * np.asarray(self.sim_M[i], dtype=np.float64) # sim_M in mA
+                        sim_M_tot.append(sim_M)
+                sim_data = list(map(list, zip(*sim_M_tot)))
+                save_data = "H\t"
+                units = "[T]\t"
+                for i in range(len(self.sim_M)):
+                    phiH = str(round(self.param_values[8][i]*180/np.pi, 0))
+                    save_data += "M_(phiH={pH}°)\t".format(pH = phiH)
+                    units += "[" + sim_M_unit + "]\t"
+                save_data = save_data[:-1] + "\n"
+                units = units[:-1] + "\n"
+                save_data += units
+                for i, line in enumerate(sim_data):
+                    for j in range(len(line)):
+                        save_data += str(line[j]) + "\t"
+                    save_data = save_data[:-1] + "\n"
+                save_data = save_data[:-1]
+            elif self.cur_plot == "macrospins" and len(self.phiA) != 0:
+                sim_data = [self.sim_H]
                 phiA_local = self.phiA.copy()
                 phiB_local = self.phiB.copy()
+                for j in range(len(self.phiA)):
+                    for i in range(len(self.phiA[j])):
+                        phiA_local[j].append(normalizeRadian(phiA_local[j][i]*np.pi/180 + np.pi)*180/np.pi)
+                        phiB_local[j].append(normalizeRadian(phiB_local[j][i]*np.pi/180 + np.pi)*180/np.pi)
+                    sim_data.append(phiA_local[j])
+                    sim_data.append(phiB_local[j])
+                sim_data = list(map(list, zip(*sim_data)))
+                save_data = "H\t"
+                units = "[T]\t"
                 for i in range(len(self.phiA)):
-                    phiA_local.append(normalizeRadian(phiA_local[i]*np.pi/180 + np.pi)*180/np.pi)
-                    phiB_local.append(normalizeRadian(phiB_local[i]*np.pi/180 + np.pi)*180/np.pi)
-                sim_data = list(np.stack((self.sim_H, phiA_local, phiB_local)).T)
-                save_data = "H\tphi_top_FM\tphi_bot_FM\n[T]\t[deg]\t[deg]\n"
-                for i in range(len(sim_data)):
-                    save_data += str(sim_data[i][0]) + "\t" + str(sim_data[i][1]) + "\t" + str(sim_data[i][2]) + "\n"
+                    phiH = str(round(self.param_values[8][i]*180/np.pi, 0))
+                    save_data += "phi_top_(phiH={pH}°)\tphi_bot_(phiH={pH}°)\t".format(pH = phiH)
+                    units += "[deg]\t[deg]\t"
+                save_data = save_data[:-1] + "\n"
+                units = units[:-1] + "\n"
+                save_data += units
+                for i, line in enumerate(sim_data):
+                    for j in range(len(line)):
+                        save_data += str(line[j]) + "\t"
+                    save_data = save_data[:-1] + "\n"
+                save_data = save_data[:-1]
+            elif self.cur_plot == "energy":
+                self.writeConsole("Exporting the energy landscape is currently not supported.")
+                return
             else:
                 return
-            save_data = save_data[:-1]
-        except:
+        except Exception as err:
+            self.writeConsole("Error while trying to export plot: " + str(err))
             return
         save_filename = tk.filedialog.asksaveasfilename(parent=self, initialdir=os.getcwd(), filetypes=[("Text File", ".txt")], defaultextension=".txt")
         if save_filename != "":
@@ -939,8 +1026,11 @@ class GUI(ctk.CTk):
         for i in range(0, 9):
             if i in (0, 1, 3, 4, 5, 6):
                 val = round(self.param_values[i] * 1e3, 13)
-            elif i in (2, 7, 8):
+            elif i in (2, 7):
                 val = round(self.param_values[i] * 180/np.pi, 3)
+            elif i == 8:
+                phiHs = [str(round(float(phiH)*180/np.pi, 1)) for phiH in self.param_values[i]]
+                val = ", ".join(phiHs)
             else:
                 val = self.param_values[i]
             param_values.append(str(val))
