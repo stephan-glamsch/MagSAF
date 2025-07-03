@@ -4,7 +4,7 @@ MagSAF is a GUI for fast and easy simulations of magnetic hysteresis loops of sy
 
 In the future, more theoretical models, out-of-plane SAFs as well as more anisotropy options are planned. Any help in this regard is much appreciated.
 
-![Screenshot of the GUI](assets/gui_screenshot.png)
+![Screenshot of the GUI](assets/gui_screenshot.JPG)
 
 ## Getting started
 1. [How to install](#how-to-install)
@@ -12,6 +12,7 @@ In the future, more theoretical models, out-of-plane SAFs as well as more anisot
    - [Loading experimental data](#loading-experimental-data)
    - [Other plots](#other-plots)
    - [Advanced: Asymmetric SAFs](#advanced-asymmetric-safs)
+   - [Advanced: Fitting multiple hysteresis loops for a better anisotropy fit](#advanced-fitting-multiple-loops-for-better-anisotropy-fit)
 3. [Theoretical Framework](#theoretical-framework)
    - [What is a synthetic antiferromagnet (SAF)?](#what-is-a-synthetic-antiferromagnet-saf)
    - [Coordinate System](#coordinate-system)
@@ -19,7 +20,6 @@ In the future, more theoretical models, out-of-plane SAFs as well as more anisot
 4. [Fitting procedure](#fitting-procedure)
    - [Figure of Merit](#figure-of-merit)
    - [Fit Boundaries](#fit-boundaries)
-5. [It's a Bug not a Feature](#its-a-bug-not-a-feature)
 
 ## How to install
 
@@ -48,6 +48,13 @@ When the ferromagnetic layers of your SAF are asymmetric in thickness or saturat
 
 > [!TIP]
 > After fitting your $dM^i_s$ parameter(s) you can either select *"Calculate d from Ms"* or *"Calculated Ms from d"* form the dropdown menu, input the one required parameter and then press *Calculate* to quickly get the fitted thickness $d$ or saturation magnetization $M_s$.
+
+### Advanced: Fitting multiple loops for a better anisotropy fit
+
+In case your SAF possesses an in-plane uniaxial magnetic anisotropy, you can achieve better fit results by fitting several hysteresis loops for different field angles in parallel. To do so, you can just add more exp. M(H) data (until 3) and then input the respective external field angles in the same order as your loaded exp. data separated by commata in the $\phi^H$ input field.
+
+> [!IMPORTANT]
+> For this to work, we assume that the field sequence (aka field steps) is the same for all loaded measurements. Of course, they also need to be measurements of the same sample - just along different external field angles.
 
 ## Theoretical Framework
 
@@ -109,12 +116,6 @@ $N$ is the amount of data points of the full hysteresis loop, $\sum_j$ sums over
 ### Fit Boundaries
 
 Currently, it is not possible to fit without boundaries. The fit boundaries are the lower and upper values of the slider of the fitted parameter.
-
-# It's a Bug not a Feature
-
-You may see this list as a "I might fix this in the future" or "Be aware of these *features*" list:
-
-- In certain cases, incorrect macrospin rotations can occur if the simulation field steps $\Delta \mu_0 H$ are too large. Be aware of this, when fitting experimental data because experimental field steps are used for simulations and fits if they are available.
 
 # Credits
 
