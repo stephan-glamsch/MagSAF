@@ -23,7 +23,7 @@ class MacrospinModel():
         self.phiHs = param_values[8]
         self.phiH = self.phiHs[0]
         self.param_values = param_values
-        self.exp_H = exp_H
+        self.exp_H = list(exp_H)
         self.fit_paras = fit_paras
         self.fit_para_ind = fit_para_ind
         self.fit_type = fit_type
