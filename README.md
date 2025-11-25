@@ -2,7 +2,7 @@
 
 MagSAF is a GUI for fast and easy simulations of magnetic hysteresis loops of synthetic antiferromagnets (SAFs). Its target audience are reasearchers who want to get into the field of SAFs. With this software you can get familiar with the influence all magnetic parameters have on the hysteresis loop but also fit your experimental data to extract those magnetic parameters. The simulations are currently based on a macrospin model and the software assumes an in-plane easy axis SAF. It is also possible to simulate and fit uniaxial magnetic anisotropies in both ferromagnetic layers.
 
-In the future, more theoretical models, out-of-plane SAFs as well as more anisotropy options are planned. Any help in this regard is much appreciated.
+For more information and some validation of MagSAF in a specific parameter space, please refer to our [open-access publication](https://doi.org/10.1063/5.0288886). If you use MagSAF for any of your publications, we kindly request that you cite us accordingly. In the future, more theoretical models, out-of-plane SAFs as well as more anisotropy options might be added. Any help in this regard is much appreciated.
 
 ![Screenshot of the GUI](assets/gui_screenshot.JPG)
 
